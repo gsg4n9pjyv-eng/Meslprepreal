@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meal Prep Recipe Book</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #232637;
+  --surface3: #2b2f45;
+  --accent: #e87c3e;
+  --accent2: #f5a623;
+  --green: #4caf82;
+  --blue: #5b8cf7;
+  --text: #e8eaf0;
+  --muted: #7a7f98;
+  --border: #2e3147;
+  --card-hover: #20233a;
+  --radius: 10px;
+}
+body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+/* ── HEADER ── */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 20px;
+  display: flex; align-items: center; gap: 16px; flex-shrink: 0; flex-wrap: wrap;
+}
+.header-title { font-size: 1rem; font-weight: 700; color: var(--accent); white-space: nowrap; }
+.header-title span { color: var(--muted); font-weight: 400; font-size: 0.78rem; margin-left: 8px; }
+
+.week-selector {
+  display: flex; align-items: center; gap: 6px; background: var(--surface2);
+  border: 1px solid var(--border); border-radius: var(--radius); padding: 5px 10px;
+}
+.week-selector label { font-size: 0.72rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; white-space: nowrap; }
+.week-select {
+  background: transparent; border: none; color: var(--text); font-size: 0.85rem;
+  font-weight: 600; cursor: pointer; outline: none; min-width: 100px;
+}
+.week-select option { background: var(--surface2); }
+
+.add-week-btn {
+  background: var(--surface2); border: 1px dashed var(--border); color: var(--muted);
+  padding: 5px 10px; border-radius: var(--radius); font-size: 0.78rem; cursor: pointer;
+  transition: all 0.15s; white-space: nowrap;
+}
+.add-week-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.delete-week-btn {
+  background: transparent; border: none; color: var(--muted); font-size: 0.75rem;
+  cursor: pointer; padding: 4px 6px; border-radius: 6px; transition: all 0.15s;
+}
+.delete-week-btn:hover { color: #e05555; background: rgba(224,85,85,0.1); }
+
+.header-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.view-tabs { display: flex; background: var(--surface2); border-radius: var(--radius); padding: 3px; gap: 2px; }
+.view-tab { padding: 5px 14px; border-radius: 7px; border: none; cursor: pointer; font-size: 0.78rem; font-weight: 600; background: transparent; color: var(--muted); transition: all 0.15s; }
+.view-tab.active { background: var(--accent); color: white; }
+
+/* ── LAYOUT ── */
+.app-body { display: flex; flex: 1; overflow: hidden; }
+
+/* ── BROWSER ── */
+.browser { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.browser-toolbar { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; flex-wrap: wrap; flex-shrink: 0; }
+.search-input {
+  flex: 1; min-width: 160px; background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); padding: 7px 12px; border-radius: 8px; font-size: 0.83rem; outline: none;
+}
+.search-input:focus { border-color: var(--accent); }
+.filter-select {
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+  padding: 7px 10px; border-radius: 8px; font-size: 0.78rem; outline: none; cursor: pointer;
+}
+.filter-select:focus { border-color: var(--accent); }
+.browser-scroll { flex: 1; overflow-y: auto; padding: 14px 16px; }
+.results-count { font-size: 0.72rem; color: var(--muted); margin-bottom: 10px; }
+.cat-section { margin-bottom: 24px; }
+.cat-title { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--accent2); margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid var(--border); }
+.recipe-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+
+.recipe-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 11px 13px; cursor: pointer; transition: all 0.12s; user-select: none; position: relative;
+}
+.recipe-card:hover { background: var(--card-hover); border-color: var(--accent); transform: translateY(-1px); }
+.recipe-card.in-week { border-color: var(--green); background: #172a21; }
+.recipe-card.in-week::after { content: '✓'; position: absolute; top: 9px; right: 11px; color: var(--green); font-weight: 700; font-size: 0.85rem; }
+.recipe-name { font-size: 0.83rem; font-weight: 600; line-height: 1.3; margin-bottom: 7px; padding-right: 18px; }
+.recipe-pills { display: flex; gap: 5px; flex-wrap: wrap; }
+.pill { font-size: 0.66rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; background: var(--surface2); }
+.pill.cal { color: var(--accent2); }
+.pill.pro { color: var(--green); }
+.pill.src { color: #8aa4cf; }
+.pill.srv { color: #b8a4cf; }
+
+/* ── SIDE PANEL ── */
+.side-panel { width: 340px; min-width: 300px; border-left: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
+
+/* WEEK PLAN TAB */
+.week-view { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+.week-header { padding: 14px 16px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.week-header h2 { font-size: 0.92rem; font-weight: 700; margin-bottom: 4px; }
+.week-header p { font-size: 0.72rem; color: var(--muted); line-height: 1.4; }
+.week-scroll { flex: 1; overflow-y: auto; padding: 10px 14px; }
+
+.week-meal-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 9px 11px; margin-bottom: 6px; transition: border-color 0.12s;
+}
+.week-meal-item:hover { border-color: var(--border); }
+.meal-info { flex: 1; min-width: 0; }
+.meal-name { font-size: 0.8rem; font-weight: 600; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.meal-meta { font-size: 0.68rem; color: var(--muted); margin-top: 3px; }
+.remove-meal { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1rem; line-height: 1; padding: 2px 4px; border-radius: 4px; flex-shrink: 0; transition: all 0.12s; }
+.remove-meal:hover { color: #e05555; background: rgba(224,85,85,0.1); }
+
+.week-empty { text-align: center; padding: 30px 16px; color: var(--muted); font-size: 0.8rem; line-height: 1.6; }
+.week-empty .icon { font-size: 2rem; margin-bottom: 8px; }
+
+.week-footer { padding: 10px 14px; border-top: 1px solid var(--border); flex-shrink: 0; display: flex; gap: 6px; }
+.btn { padding: 7px 12px; border-radius: 7px; border: none; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+.btn-green { background: var(--green); color: white; }
+.btn-green:hover { background: #3a9068; }
+.btn-ghost { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+.btn-ghost:hover { color: var(--text); border-color: var(--muted); }
+.btn-full { flex: 1; }
+
+/* SHOPPING LIST TAB */
+.shop-view { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+.shop-header { padding: 14px 16px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.shop-header h2 { font-size: 0.92rem; font-weight: 700; margin-bottom: 4px; }
+.shop-header p { font-size: 0.72rem; color: var(--muted); }
+.shop-week-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+.shop-week-tab {
+  padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--surface2); color: var(--muted); font-size: 0.72rem; font-weight: 600;
+  cursor: pointer; transition: all 0.12s;
+}
+.shop-week-tab.active { background: var(--accent); border-color: var(--accent); color: white; }
+.shop-week-tab:hover:not(.active) { border-color: var(--muted); color: var(--text); }
+.shop-scroll { flex: 1; overflow-y: auto; padding: 10px 14px; }
+.shop-section { margin-bottom: 18px; }
+.shop-section-title { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--accent2); margin-bottom: 7px; }
+.shop-item { display: flex; align-items: flex-start; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 0.79rem; line-height: 1.4; }
+.shop-item:last-child { border-bottom: none; }
+.shop-check { width: 15px; height: 15px; border-radius: 3px; border: 1.5px solid var(--border); flex-shrink: 0; margin-top: 2px; cursor: pointer; accent-color: var(--green); }
+.item-text { flex: 1; }
+.item-recipe { font-size: 0.62rem; color: var(--muted); margin-top: 1px; }
+.shop-empty { text-align: center; padding: 30px 16px; color: var(--muted); font-size: 0.8rem; line-height: 1.6; }
+.shop-empty .icon { font-size: 2rem; margin-bottom: 8px; }
+.shop-footer { padding: 10px 14px; border-top: 1px solid var(--border); flex-shrink: 0; }
+
+/* ── MODAL ── */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 300; display: none; align-items: center; justify-content: center; padding: 16px; }
+.overlay.open { display: flex; }
+.modal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; width: 100%; max-width: 440px; max-height: 85vh; overflow-y: auto; padding: 20px; }
+.modal-name { font-size: 1rem; font-weight: 700; line-height: 1.3; margin-bottom: 3px; }
+.modal-sub { font-size: 0.7rem; color: var(--muted); margin-bottom: 12px; }
+.modal-macros { display: flex; gap: 8px; margin-bottom: 14px; }
+.modal-macro { flex: 1; background: var(--surface2); border-radius: 8px; padding: 8px; text-align: center; }
+.modal-macro .v { font-size: 1rem; font-weight: 700; }
+.modal-macro .l { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; }
+.modal-section-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 8px; }
+.modal-ing { font-size: 0.8rem; padding: 5px 0; border-bottom: 1px solid var(--border); }
+.modal-ing:last-child { border-bottom: none; }
+.modal-footer { margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; }
+.week-add-row { display: flex; gap: 6px; align-items: center; flex: 1; }
+.week-add-select { flex: 1; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 7px 8px; border-radius: 7px; font-size: 0.78rem; outline: none; cursor: pointer; }
+
+/* ── WEEK NAME MODAL ── */
+.name-modal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; width: 100%; max-width: 320px; }
+.name-modal h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 12px; }
+.name-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 8px; font-size: 0.88rem; outline: none; margin-bottom: 12px; }
+.name-input:focus { border-color: var(--accent); }
+
+/* ── NO RESULTS ── */
+.no-results { text-align: center; padding: 40px; color: var(--muted); font-size: 0.82rem; }
+
+/* ── PRINT ── */
+@media print {
+  header, .browser, .overlay, .shop-week-tabs, .shop-footer, .view-tabs, .week-view { display: none !important; }
+  body { background: white; color: black; overflow: auto; height: auto; }
+  .app-body { display: block; height: auto; }
+  .side-panel { width: 100%; border: none; background: white; display: block; }
+  .shop-view { height: auto; overflow: visible; }
+  .shop-scroll { overflow: visible; }
+  .shop-item { color: black; border-color: #ddd; }
+  .shop-section-title { color: #555; }
+  .shop-header { border-color: #ddd; }
+  .shop-header h2, .shop-header p { color: black; }
+  .item-recipe { color: #888; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-title">🍳 Meal Prep <span>123 recipes</span></div>
+
+  <div class="week-selector">
+    <label>Week</label>
+    <select class="week-select" id="active-week-select" onchange="setActiveWeek(this.value)">
+    </select>
+    <button class="delete-week-btn" onclick="deleteWeek()" title="Delete this week">✕</button>
+  </div>
+  <button class="add-week-btn" onclick="promptAddWeek()">+ New week</button>
+
+  <div class="header-right">
+    <div class="view-tabs">
+      <button class="view-tab active" id="tab-plan" onclick="switchPanel('plan')">This Week</button>
+      <button class="view-tab" id="tab-shop" onclick="switchPanel('shop')">Shopping List</button>
+    </div>
+  </div>
+</header>
+
+<div class="app-body">
+
+  <!-- RECIPE BROWSER -->
+  <div class="browser">
+    <div class="browser-toolbar">
+      <input class="search-input" type="text" id="search" placeholder="Search 123 recipes…" oninput="renderBrowser()">
+      <select class="filter-select" id="cat-filter" onchange="renderBrowser()">
+        <option value="">All categories</option>
+        <option>Pasta &amp; Noodles</option>
+        <option>Rice Bowls</option>
+        <option>Soups &amp; Stews</option>
+        <option>Burritos &amp; Handheld</option>
+        <option>Proteins &amp; Other</option>
+        <option>Breakfast</option>
+        <option>Loaded &amp; Sides</option>
+      </select>
+      <select class="filter-select" id="src-filter" onchange="renderBrowser()">
+        <option value="">Both books</option>
+        <option value="Macro Cookbook">Macro Cookbook</option>
+        <option value="Stealth Health">Stealth Health</option>
+      </select>
+    </div>
+    <div class="browser-scroll">
+      <div class="results-count" id="results-count"></div>
+      <div id="recipe-container"></div>
+    </div>
+  </div>
+
+  <!-- SIDE PANEL -->
+  <div class="side-panel">
+
+    <!-- WEEK PLAN VIEW -->
+    <div class="week-view" id="panel-plan">
+      <div class="week-header">
+        <h2 id="week-plan-title">Week Plan</h2>
+        <p id="week-plan-sub">Click any recipe to add it to this week.</p>
+      </div>
+      <div class="week-scroll" id="week-meal-list"></div>
+      <div class="week-footer">
+        <button class="btn btn-green btn-full" onclick="switchPanel('shop')">View shopping list →</button>
+      </div>
+    </div>
+
+    <!-- SHOPPING LIST VIEW -->
+    <div class="shop-view" id="panel-shop" style="display:none">
+      <div class="shop-header">
+        <h2>Shopping List</h2>
+        <p id="shop-sub">Ingredients grouped by aisle.</p>
+        <div class="shop-week-tabs" id="shop-week-tabs"></div>
+      </div>
+      <div class="shop-scroll" id="shop-content"></div>
+      <div class="shop-footer">
+        <button class="btn btn-green btn-full" onclick="window.print()">🖨️ Print list</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- RECIPE DETAIL MODAL -->
+<div class="overlay" id="modal-overlay" onclick="handleOverlayClick(event)">
+  <div class="modal" id="modal-inner"></div>
+</div>
+
+<!-- ADD WEEK MODAL -->
+<div class="overlay" id="week-modal-overlay" onclick="closeWeekModal(event)">
+  <div class="name-modal" onclick="event.stopPropagation()">
+    <h3>Name this week</h3>
+    <input class="name-input" id="week-name-input" type="text" placeholder="e.g. Jun 23 – Jun 29" maxlength="40"
+      onkeydown="if(event.key==='Enter') confirmAddWeek()">
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-green btn-full" onclick="confirmAddWeek()">Create week</button>
+      <button class="btn btn-ghost" onclick="closeWeekModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const RECIPES = [{"name":"Queso Chicken Mac n’ Cheese","servings":10,"calories":540,"protein":46,"carbs":62,"fat":13,"ingredients":["900g (32oz) chicken breast","800g (3 ⅓ cups) 2% cottage cheese","120g red enchilada sauce","100g (½ cup) 1/3-fat cream cheese","80g (3 Tbsp) green chiles","150g (1 ½ cups) extra sharp cheddar","400g (14oz) can of fire-","cheese","roasted tomatoes","30g (¼ cup) cheddar powder","2 Tbsp garlic purée","120g (½ cup) red enchilada sauce","2 tsp onion powder","150g (⅔ cup) 1% milk","1 Tbsp salt","1 tsp black pepper","½ tsp cayenne","2 orange bell peppers","2 red bell peppers","1 onion","672g (24 oz) pasta","Chopped cilantro"],"source":"Macro Cookbook","category":"Pasta & Noodles"},{"name":"Peanut Miso Chicken Rice Bowls","servings":7,"calories":610,"protein":50,"carbs":67,"fat":16,"ingredients":["1340g (48oz) boneless,","Green Onions","skinless chicken thighs","Sesame Seeds","120g (½ cup) peanut butter","480g (2 ½ cups) short grain","60g (4 Tbsp) white miso paste","rice (dry weight)","60g (4 Tbsp) soy sauce","40g (2 ½ Tbsp) maple syrup","30g (2 Tbsp) rice vinegar","20g (4 tsp) ginger purée","20g (4 tsp) garlic purée","Red chili flakes, black pepper","& sesame seeds to taste","Splash of bone broth or water"],"source":"Macro Cookbook","category":"Rice Bowls"},{"name":"Pineapple teriyaki pulled pork rice bowls","servings":10,"calories":580,"protein":44,"carbs":59,"fat":17,"ingredients":["1790g (64oz) Pork loin","100g (½ cup) low-fat mayo","1 Pineapple (400g)","100g (½ cup) 0% greek yogurt","100g (⅓ cup) soy sauce","30g no sugar ketchup","90g (6 Tbsp) mirin","70g sriracha","80g (4 Tbsp) honey","Salt, pepper, garlic powder to","2 Tbsp grated ginger","taste","2 Tbsp grated garlic","1% Milk (as needed for desired","4 Tbsp cornstarch","4 Tbsp cold water","consistency)","2 stalks green onions, chopped","500g (2.5 cups) short grain or","sushi rice"],"source":"Macro Cookbook","category":"Rice Bowls"},{"name":"Green Enchilada Chicken & Rice Soup","servings":10,"calories":405,"protein":44,"carbs":33,"fat":8,"ingredients":["1790g (64oz) diced boneless,","1 bunch cilantro","skinless chicken thighs","60g (3 Tbsp) honey","300g 0% Greek yogurt","420g (1 ¾ cups) green","enchilada sauce","300g jasmine rice","226g (8oz) Hatch green","750g chicken bone broth","chiles","1 white onion","Juice of 1 lime","1 ½ Tbsp salt","1 Tbsp garlic powder","Dash of black pepper"],"source":"Macro Cookbook","category":"Rice Bowls"},{"name":"Frozen Cheesy Chicken & Rice Burritos","servings":18,"calories":445,"protein":32,"carbs":52,"fat":12,"ingredients":["1340g (48oz) boneless skinless","400g (2 cups) (uncooked","chicken thighs","weight) of any rice of choice","2 packets taco seasoning","15g (1 Tbsp) lime juice","15g (1 Tbsp) chicken bouillon","420g (15oz) can of green","enchilada sauce","Garlic powder and salt","5 diced Roma tomatoes","3 jalapeños","2 white onions","500g (1 ¾ cups) 0% Greek","yogurt (recommended: FAGE)","150g (1½ cups) reduced-fat","cheddar cheese","120g (1 cup) reduced-fat","mozzarella cheese","18 Burrito-sized Tortillas","1 bunch chopped cilantro"],"source":"Macro Cookbook","category":"Burritos & Handheld"},{"name":"Sundried Tomato Spinach Feta Pasta","servings":10,"calories":590,"protein":49,"carbs":58,"fat":17,"ingredients":["1340g (48oz) boneless, skinless","200g (7 cups) spinach","chicken thighs","15 basil leaves","45g (3 Tbsp) balsamic vinegar","340g (2 ¼ cups) feta cheese","130g (1 cup) sundried tomatoes","15g (1 Tbsp) pesto","7–8 cloves garlic","1 Tbsp salt","2 tsp onion powder","2 tsp black pepper","Red chili flakes, to taste","600g (2 ¾ cups) 2% cottage","cheese","360g (1 ½ cups) 1% milk","672g bow tie pasta (farfalle)","360g (1 ½ cups) pasta water","for slow cooker"],"source":"Macro Cookbook","category":"Pasta & Noodles"},{"name":"Garlic Butter Chicken Alfredo","servings":10,"calories":515,"protein":47,"carbs":54,"fat":14,"ingredients":["900g (32oz) chicken breast","800g (3 ⅓ cups) 2% cottage","30g (¼ cup) Parmigiano","cheese","Reggiano","120g (½ cup) 1/3-fat cream","Juice of 1 lemon","cheese","2 Tbsp garlic purée","2 tsp garlic powder","2 tsp onion powder","1 Tbsp salt","1 tsp black pepper","2 tsp Kinder roasted Garlic","brown butter seasoning","120g (1 cup) Parmigiano","Reggiano","240g (1 cup) 1% milk","672g (24oz) pasta of choice","120g (½ cup) pasta water","Dash of crushed red pepper","120g (½ cup) water"],"source":"Macro Cookbook","category":"Pasta & Noodles"},{"name":"Chili Garlic Chicken Fried Rice","servings":10,"calories":575,"protein":43,"carbs":67,"fat":16,"ingredients":["1360g (48oz) chicken thighs","1400g (7 cups) day-old cooked","60g (4 Tbsp) chili garlic sauce rice (600g {3 cups} uncooked","30g (2 Tbsp) soy sauce","weight)","60g (3 Tbsp) honey","60g (4 Tbsp) soy sauce","1 Tbsp rice vinegar","30g (2 Tbsp) fish sauce","1 Tbsp minced ginger","60g (3 Tbsp) honey","Salt & pepper to taste","30g (2 Tbsp) rice vinegar","150g (⅔ cup) 0% skyr or 0%","Greek yogurt","45g (3 Tbsp) light mayo","35g (2 Tbsp) gochujang","30g (2 Tbsp) sriracha"],"source":"Macro Cookbook","category":"Rice Bowls"},{"name":"Butter Chicken Rice Bowls","servings":7,"calories":460,"protein":38,"carbs":50,"fat":11,"ingredients":["900g (32oz) chicken breast","30g (2 Tbsp) butter","250g (1 cup) plain 0% Greek","yogurt or Skyr","30g (2 Tbsp) butter","2 onions","2 Tbsp tomato paste","2 Tbsp garlic paste","2 Tbsp ginger paste","2 Tbsp paprika","2 Tbsp garam masala","420g (2 cups) basmati rice","1 tsp cayenne","1 Tbsp chicken bouillon","1 Tbsp sugar or zero calorie","sweetener"],"source":"Macro Cookbook","category":"Rice Bowls"},{"name":"Tzatziki chicken & Harissa Spiced Rice","servings":8,"calories":470,"protein":49,"carbs":45,"fat":11,"ingredients":["1340g (48oz) boneless, skinless","400g (1 ¾ cups) 0% Greek yogurt","chicken breast","150g (½ cup) light sour cream","4-5 garlic cloves","1 Tbsp dried oregano","1 Tbsp salt","20g (1 Tbsp) honey","15g (1 Tbsp) olive oil","1 Tbsp onion powder","1 tsp black pepper","45g (3 Tbsp) corn starch","45g (3 Tbsp) water","1 cucumber","1 tsp salt","1 lemon","15g (1 Tbsp) olive oil","1 tsp chopped dill","2 tsp chopped chives","1 tsp garlic powder","Dash of black pepper","420g (1 ¾ cups) jasmine rice","15g (1 Tbsp) olive oil","2-3 cloves garlic","60g (4 Tbsp) harissa","15g (1 Tbsp) tomato paste","Oregano and salt, to taste"],"source":"Macro Cookbook","category":"Rice Bowls"},{"name":"Brisket Queso Mac n’ Cheese","servings":10,"calories":560,"protein":46,"carbs":63,"fat":16,"ingredients":["900g (32oz) flat cut brisket","800g (3 ⅓ cups) 2% cottage","400g (14oz) can crushed fire-","cheese","roasted tomatoes","100g (1 cup) American cheese","120g (½ cup) red enchilada","150g (1 ½ cups) extra sharp","sauce","cheddar cheese","200g (7oz) can chipotle","80g (⅓ cup) red enchilada sauce","peppers in adobo","Salt & pepper to taste","45g (3 Tbsp) green chiles","5g (1 tsp) nutritional yeast","60g (3 Tbsp) honey","(optional)","1 Tbsp salt","Chopped cilantro (optional)","2 tsp onion powder","2 tsp black pepper","672g (24 oz) pasta"],"source":"Macro Cookbook","category":"Pasta & Noodles"},{"name":"Avocado chicken rice bowls","servings":9,"calories":505,"protein":42,"carbs":60,"fat":12,"ingredients":["1340g (48oz) chicken breast","5 poblano peppers","8 diced tomatillos (300g)","5 jalapeños","30g (2 Tbsp) avocado oil","8 cloves garlic","1 Tbsp salt","300g (1 ¼ cups) 0% Greek","1 Tbsp garlic powder","1 Tbsp onion powder","Juice of ½ lemon","Handful of cilantro stems","yogurt","90g (⅓ cup) 1% milk","Juice of 1 lemon","300g avocado (1 large or 2","medium)","Handful of cilantro leaves","Salt and pepper, to taste","600g (3 cups) rice of choice"],"source":"Macro Cookbook","category":"Rice Bowls"},{"name":"Hawaiian BBQ Chicken Rice Bowls","servings":10,"calories":510,"protein":42,"carbs":66,"fat":7,"ingredients":["1790g (64oz) boneless, skinless","120g (½ cup) sugar-free","chicken thighs","BBQ sauce","120g (½ cup) sugar-free BBQ","2 stalks green onions","sauce","45g (3 Tbsp) soy sauce","15g (1 Tbsp) fish sauce","640g (3 ½ cups) rice","20g (4 tsp) grated ginger","700g (4 ½ cups) fresh","3 Tbsp corn starch","pineapple (1 whole pineapple)","3 Tbsp water","Garlic powder, onion powder,","smoked paprika, and black","pepper, to taste"],"source":"Macro Cookbook","category":"Rice Bowls"},{"name":"SPICY STEAK PASTA","servings":10,"calories":480,"protein":37,"carbs":63,"fat":9,"ingredients":["900g (32oz) flank steak or","300g (1 ¼ cups) plain 0% skyr","lean steak of choice","or Greek yogurt","790g (28oz) can fire-roasted","60g (½ cup) Parmigiano","tomatoes","Reggiano","5 guajillo chiles","4 chile de arbol","10g (2 tsp) soy sauce","60g (3 Tbsp) honey","1 ½ Tbsp salt","2 tsp onion powder","2 tsp paprika","60g (½ cup) goat cheese","240g (1 cup) 1% milk","Red chili flakes and chives, for","garnish","672g (24oz) rigatoni","2 tsp black pepper","1 shallot","8 cloves garlic"],"source":"Macro Cookbook","category":"Pasta & Noodles"},{"name":"Chicken Tinga & Green Rice","servings":7,"calories":575,"protein":50,"carbs":56,"fat":16,"ingredients":["670g (24oz) boneless, skinless","4 tsp oregano","chicken thighs","1 tsp smoked paprika","670g (24oz) chicken breasts","½ tsp cumin","45g (3 Tbsp) olive oil","1 Tbsp salt","Black pepper, to taste","2 white onions","45g (3 Tbsp) minced garlic","420g (3 ⅓ cups) short-grain rice","15g (1 Tbsp) tomato paste","450g (~2 cups) bone broth","794g (28oz) can fire-roasted diced","180g (¾ cup) water","tomatoes","Handful cilantro stems","45g (3 Tbsp) apple cider vinegar","2 tsp minced garlic","1 can (198g/7oz) chipotle peppers","1 jalapeño pepper","with adobo","15g (1 Tbsp) avocado oil","3 bay leaves","Pinch of salt","50g (⅓ cup) Cotija cheese"],"source":"Macro Cookbook","category":"Rice Bowls"},{"name":"teriyaki chicken rice bowls","servings":8,"calories":515,"protein":40,"carbs":65,"fat":9,"ingredients":["1340g (48oz) boneless,","100g (½ cup) low-fat mayo","skinless chicken thighs","100g (½ cup) 0% Greek yogurt","75g (5 Tbsp) soy sauce","75g (5 Tbsp) sriracha","30g (2 Tbsp) dark soy sauce","Salt, pepper, garlic powder","80g (4 Tbsp) honey","60g (4 Tbsp) mirin","30g (2 Tbsp) ginger paste","15g (1 Tbsp) garlic paste","45g (3 Tbsp) cornstarch","to taste","Splash of 1% Milk","480g (2.5 cups) short grain or","sushi rice, dry weight","60g (4 Tbsp) cold water","2 stalks of green onions"],"source":"Macro Cookbook","category":"Rice Bowls"},{"name":"Cheesy Chipotle Chicken Pasta","servings":10,"calories":460,"protein":40,"carbs":59,"fat":9,"ingredients":["780g (28oz) chicken breast","600g (2 ½ cups) 2% cottage","60g (4 Tbsp) adobo sauce","cheese","4-5 chipotle peppers","120g (½ cup) 1/3-fat cream","2 tsp garlic powder","cheese","2 tsp onion powder","50g (½ cup) Parmigiano","1 Tbsp salt","Reggiano","5g (1 tsp) chicken bouillon","50g (½ cup) mozzarella,","300g (1 ¼ cups) water","shredded","672g (24oz) pasta of choice","50g (2 ½ Tbsp) honey","300g (1 ¼ cups) 1% milk","salt and pepper to taste"],"source":"Macro Cookbook","category":"Pasta & Noodles"},{"name":"Lemon Harissa Chicken Pasta","servings":10,"calories":585,"protein":46,"carbs":61,"fat":17,"ingredients":["1340g (48oz) boneless, skinless Juice and zest of 2 lemons","chicken thighs","2 yellow onions","200g (1¼ cups) feta cheese","500g (2 cups) whole milk","60g (4 Tbsp) harissa paste","60g (4 Tbsp) sun-dried","672g (24 oz) penne pasta","tomatoes","15g (1 Tbsp) tomato paste","20g (1 Tbsp) honey","2 tsp each: smoked paprika,","dried thyme, dried oregano","1 tsp garlic powder","1 Tbsp salt"],"source":"Macro Cookbook","category":"Pasta & Noodles"},{"name":"Honey Chipotle Chicken Burrito Bowls","servings":7,"calories":530,"protein":48,"carbs":59,"fat":10,"ingredients":["1360g (48oz) boneless,","240g (1 cup) orange juice","skinless chicken thighs","200g (7oz) can chipotle","peppers","45g (3 Tbsp) soy sauce","420g (2 ⅓ cups) Jasmine rice","30g (2 Tbsp) apple cider","(dry weight)","vinegar","2 Tbsp garlic purée","2 tsp cumin","50g 0% Greek yogurt (per","1 Tbsp salt","bowl)","1 ½ tsp black pepper","Pico de gallo, to taste","2 tsp onion powder","Cilantro, for garnish","80g (4 Tbsp) honey","15g (1 Tbsp) avocado oil"],"source":"Macro Cookbook","category":"Burritos & Handheld"},{"name":"Chorizo Queso Mac n’ Cheese","servings":10,"calories":600,"protein":45,"carbs":58,"fat":20,"ingredients":["907g (32oz) 93% ground beef 800g (3 ⅓ cups) 2% cottage cheese","227g (8oz) pork chorizo","100g (½ cup) 1/3-fat cream cheese","1 Tbsp coarse salt","150g (1 ½ cups) extra sharp cheddar","1 Tbsp ground paprika","cheese","1 Tbsp ground oregano","30g (¼ cup) cheddar powder","1 tsp ground cumin","240g (1 cup) red enchilada sauce","1.5 tsp ground black pepper","300g (1 ¼ cups) 1% milk","120g red enchilada sauce","400g (14oz) can of fireroasted tomatoes","2 Tbsp garlic purée","1 Tbsp chipotle peppers","1 Tbsp adobo sauce","45g (3 Tbsp) apple cider","vinegar","2 orange bell peppers","2 red bell peppers","1 onion","Cilantro (optional)"],"source":"Macro Cookbook","category":"Pasta & Noodles"},{"name":"Lasagna Bowls","servings":10,"calories":480,"protein":44,"carbs":48,"fat":14,"ingredients":["907g (32oz) 93% lean ground","120g (½ cup) fat-free milk","beef","200g blended 2% cottage","30g (2 Tbsp) tomato paste","cheese","840g (54 oz) crushed","120g (1 cup) Parmigiano","tomatoes (two 28 oz cans)","Reggiano","960g (32oz) bone broth (two","60g (½ cup) low-fat","16oz boxes)","mozzarella","1 Tbsp onion powder","448g (16 oz) oven-ready","1 Tbsp garlic powder","lasagna","1.5 Tbsp salt","240g (1 cup) water","1 Tbsp Italian herbs","1 tsp black pepper"],"source":"Macro Cookbook","category":"Proteins & Other"},{"name":"Chicken Bacon Ranch Mac n’ Cheese","servings":11,"calories":490,"protein":50,"carbs":52,"fat":12,"ingredients":["896g (32oz) chicken breast","800g (3 ⅓ cups) 2% cottage","6 slices turkey bacon","cheese","1 packet ranch seasoning","160g (1 ¼ cups) Parmigiano","30g (1 ⅓ Tbsp) hot honey","Reggiano","1 Tbsp fresh dill","420g (1 ¾ cups) fat-free milk","Garlic powder, black pepper,","1 tsp garlic powder","& red chili flakes, to taste","1 tsp onion powder","Salt & pepper, to taste","3 sweet onions","6 jalapeños or Fresno chilis","672g (24 oz) pasta of choice","8 cloves of garlic","480g (16oz) chicken bone","broth"],"source":"Macro Cookbook","category":"Pasta & Noodles"},{"name":"Chimichurri Steak Rice Bowls","servings":9,"calories":530,"protein":41,"carbs":53,"fat":16,"ingredients":["1340g (48oz) flank steak or lean","4 cloves minced garlic","steak of choice","2 small red chilies (e.g., red","1 yellow onion","jalapeños or Fresno chilies)","15g (1 Tbsp) minced garlic","1 tsp dried oregano","1 ½ Tbsp salt","1 tsp coarse salt","2 tsp black pepper","½ tsp black pepper","2 tsp garlic powder","2 tsp oregano","30g (2 Tbsp) red wine vinegar","15g (1 Tbsp) olive oil","240g (1 cup) puréed fresh","pineapple*"],"source":"Macro Cookbook","category":"Rice Bowls"},{"name":"Buffalo Chicken & Bacon Mac n’ Cheese","servings":11,"calories":490,"protein":46,"carbs":54,"fat":13,"ingredients":["900 (32oz) chicken breast","800g (3 ⅓ cups) 2% cottage","100g (½ cup) buffalo sauce","cheese","30g (2 Tbsp) Worcestershire","50g (⅓ cup) 1/3-fat cream","sauce","cheese","18g (1 Tbsp) chicken bouillon","100g (1 cup) extra sharp","Salt, pepper, & garlic","cheddar cheese","powder, to taste","60g (½ cup) Parmigiano","3 orange bell peppers","2 onions","672g (24 oz) pasta of choice"],"source":"Macro Cookbook","category":"Pasta & Noodles"},{"name":"Korean BBQ Beef Rice Bowls","servings":10,"calories":505,"protein":36,"carbs":56,"fat":14,"ingredients":["1340g (48oz) flat cut brisket or 30g (2 Tbsp) toasted sesame","chuck eye roast","oil","OR lean steak of choice","60g (4 Tbsp) premium oyster","5 Tbsp soy sauce","sauce: brands include Lee","Kum Kee/Lucky Brand","54g (3 Tbsp) gochujang","45g (3 Tbsp) mirin","200g 0% skyr or Greek yogurt","40g (2 Tbsp) honey","36g (2 Tbsp) gochujang","30g (2 Tbsp) garlic purée","10g (2 tsp) chili crisp","15g (1 Tbsp) ginger purée","40g (2 Tbsp + 2 tsp) 1% milk","Black pepper","Salt & pepper, to taste","600g (3 cups) rice (uncooked","Sesame seeds","weight)","Chopped green onions"],"source":"Macro Cookbook","category":"Rice Bowls"},{"name":"Spicy Chicken Alfredo","servings":10,"calories":525,"protein":46,"carbs":58,"fat":14,"ingredients":["900g (32oz) chicken breast","800g (3 ⅓ cups) 2% cottage","30g (¼ cup) Parmigiano","cheese","Reggiano","120g (½ cup) 1/3-fat cream","30g (2 Tbsp) minced garlic","cheese","1 Tbsp salt","120g (1 cup) Parmigiano","2 tsp crushed red pepper","Reggiano","2 tsp garlic powder","240g (1 cup) 1% milk","2 tsp onion powder","Salt, pepper, & red chili flakes,","1 tsp black pepper","to taste","½ tsp cayenne pepper","120g (½ cup) chicken bone","broth","5 red bell peppers","30g (2 Tbsp) butter","10 cloves garlic"],"source":"Macro Cookbook","category":"Pasta & Noodles"},{"name":"Slow Cooker Chili","servings":8,"calories":445,"protein":44,"carbs":26,"fat":19,"ingredients":["1340g (48 oz) 93% ground beef","1 Tbsp each: salt, ancho chili","3 yellow onions","10 cloves garlic","2 Tbsp butter","3 Tbsp tomato paste","480g (2 cups) beef bone broth","powder, garlic powder, onion","powder","2 tsp each: smoked paprika, cumin,","oregano","1 tsp each: black pepper, cayenne","⅛ tsp cinnamon","480g (2 cups) red enchilada","sauce","400g (1 ¾ cups) 0% plain skyr","3 Tbsp apple cider vinegar","100g (⅓ cup) 1/3 fat cream cheese","794g (28oz) can of fire","200g (2 cups) sharp cheddar","roasted diced tomatoes","cheese","1 can (7oz) chipotles","Handful of Cilantro","425g (15oz) black beans"],"source":"Macro Cookbook","category":"Soups & Stews"},{"name":"Chili Mac","servings":12,"calories":560,"protein":44,"carbs":60,"fat":18,"ingredients":["1340g (48 oz) 93% ground beef","1 Tbsp each: salt, ancho chili","3 yellow onions","10 cloves garlic","2 Tbsp butter","3 Tbsp tomato paste","480g (2 cups) beef bone broth","powder","2 tsp each: smoked paprika,","cumin, oregano","1 tsp each: black pepper, cayenne","⅛ tsp cinnamon","480g (2 cups) red enchilada","sauce","672g (24 oz) pasta of choice","3 Tbsp apple cider vinegar","794g (28oz) can of fire roasted","diced tomatoes","1 can (7oz) chipotles","425g (15oz) black beans","20g (1 Tbsp) honey"],"source":"Macro Cookbook","category":"Pasta & Noodles"},{"name":"Butter Chicken Chili","servings":7,"calories":390,"protein":47,"carbs":11,"fat":17,"ingredients":["1350g (48oz) ground chicken thighs 45g (3 Tbsp) butter","3 Tbsp smoked paprika","2 Tbsp cumin","1 Tbsp garam masala","2 tsp coriander","1 tsp cayenne","1 Tbsp salt","Dash of black pepper","300g (1 ¼ cups) plain 0% Greek","yogurt or skyr","30g (2 Tbsp) butter","½ spice blend"],"source":"Macro Cookbook","category":"Soups & Stews"},{"name":"Frozen Cheesy Buffalo Chicken Burritos","servings":14,"calories":450,"protein":37,"carbs":40,"fat":16,"ingredients":["1360g (48oz) boneless,","750g (3 ¼ cups) 2% cottage","skinless chicken thighs","cheese","1 tsp salt","200g (¾ cup) 1/3-fat cream","1 tsp garlic powder","cheese","1 tsp onion powder","200g (¾ cup) buffalo sauce","1 tsp paprika","200g (1 ½ cups) 2% cheddar","1 tsp chili powder","cheese","1 packet ranch seasoning","60g (3 Tbsp) honey","1 Tbsp fresh chopped dill","30g (2 Tbsp) butter","100g (½ cup) buffalo sauce","Handful of chopped chives"],"source":"Macro Cookbook","category":"Burritos & Handheld"},{"name":"miso Mac","servings":10,"calories":600,"protein":47,"carbs":61,"fat":18,"ingredients":["1340g (48oz) boneless, skinless 600g (2½ cups) whole milk","chicken thighs","60g (4 Tbsp) white miso","60g (4 Tbsp) white miso paste","250g (2 cups) sharp cheddar","45g (3 Tbsp) mirin","30g (2 Tbsp) Parmigiano","1 Tbsp salt","Reggiano","1 Tbsp garlic powder","100g (1 cup) mozzarella","Black pepper","1 diced white onion","672g (24 oz) macaroni","Juice of 1 lemon","White/black sesame seeds"],"source":"Macro Cookbook","category":"Pasta & Noodles"},{"name":"Cheesy Southwestern Chicken Orzo","servings":12,"calories":545,"protein":42,"carbs":58,"fat":15,"ingredients":["1350g (48oz) boneless,","672g (24 oz) orzo","skinless chicken thighs","6 cans Amy’s southwestern","3 packets taco seasoning","vegetable soup","1 Tbsp chicken bouillon","120g (4 oz) water","4 Tbsp Hatch green chiles","Hot sauce of choice, to taste","15g (1 Tbsp) soy sauce","480g (16oz) chicken bone","broth","180g (1 ¾ cups) 2% cheddar","cheddar","Cilantro","60g (½ cup) extra sharp","500g (2 cups) 2% plain Greek","yogurt"],"source":"Macro Cookbook","category":"Pasta & Noodles"},{"name":"Jalapeño popper Mac n cheese","servings":10,"calories":570,"protein":54,"carbs":61,"fat":14,"ingredients":["900g (32oz) chicken breast","800g (3 ⅓ cups) 2% cottage","100g pickled jalapeños","cheese","30g (2 Tbsp) jalapeño brine","80g (⅓ cup) 1/3 fat cream","480g (16oz) chicken bone","cheese","broth","40g (2 Tbsp) honey","3 sweet onions","150g (1 ½ cups) Parmigiano","8 jalapeños","Reggiano","6 slices turkey bacon","420g (¾ cup) fat-free milk","Salt, garlic powder, and","¾ tsp garlic powder","pepper, to taste","¾ tsp onion powder","672g (24 oz) pasta","Salt & pepper, to taste","10 slices center-cut bacon"],"source":"Macro Cookbook","category":"Pasta & Noodles"},{"name":"Honey Harissa chicken Rice bowls","servings":10,"calories":565,"protein":49,"carbs":57,"fat":14,"ingredients":["1790g (64oz) boneless, skinless","560g (3 cups) rice","chicken thighs","840g (3½ cups) chicken bone broth","105g (7 Tbsp) harissa paste","Salt, garlic powder, dried oregano,","15g (1 Tbsp) white miso paste","dried thyme, rosemary (all to taste)","(optional)","15g (1 Tbsp) olive oil","2 tsp smoked paprika","2 tsp dried thyme or oregano","1 tsp garlic powder","1 Tbsp salt (or to taste)","Dash of black pepper","60g (3 Tbsp) honey","Juice of 1 lemon","3 Tbsp harissa","200g (¾ cup) store-bought tzatziki","200g (¾ cup) 0% Greek yogurt","Salt/garlic powder to taste","100g (¾ cup) feta cheese","Additional topping ideas: Pickled","red onions, diced avocados, Diced","cucumbers, capers"],"source":"Macro Cookbook","category":"Rice Bowls"},{"name":"Buffalo Chicken Mac N Cheese","servings":10,"calories":480,"protein":35,"carbs":59,"fat":11,"ingredients":["780g (28oz) boneless, skinless","600g (2 ½ cups) 2% cottage","chicken thighs","cheese","80g (⅓ cup) buffalo sauce","150g (⅔ cup) 1/3 fat cream","30g (2 Tbsp) Worcestershire","cheese","sauce","40g (⅓ cup) Parmigiano","2 tsp garlic powder","Reggiano","2 tsp onion powder","50g (½ cup) cheddar powder","5g (1 tsp) chicken bouillon","120g (½ cup) buffalo sauce","200g (¾ cup) water","60g (3 Tbsp) honey","672g (24 oz) pasta of choice","300g (1 ¼ cups) 1% milk","Salt and pepper, to taste"],"source":"Macro Cookbook","category":"Pasta & Noodles"},{"name":"Chicken Enchilada Soup","servings":10,"calories":480,"protein":45,"carbs":24,"fat":22,"ingredients":["1340g (48oz) boneless, skinless","2 yellow onions","chicken thighs","3 jalapeño peppers","1 Tbsp each: salt, chili powder,","garlic powder, onion powder","2 tsp each: smoked paprika,","cumin, oregano","1 tsp cayenne","½ tsp cinnamon","400g (1 ¾ cups) 0% skyr","100g (½ cup) 1/3 fat cream","cheese"],"source":"Macro Cookbook","category":"Soups & Stews"},{"name":"Pasta Bolognese","servings":12,"calories":525,"protein":40,"carbs":58,"fat":15,"ingredients":["1340g (48oz) 93% ground beef","45g (3 Tbsp) Butter","5 slices center-cut bacon","3 onions","1580g (two 28oz cans) crushed","12 cloves of garlic","tomatoes","90g (6 Tbsp) Tomato Paste","2 Tbsp each: dried oregano,","454g (16oz) beef bone broth","salt","30g (2 Tbsp) Worcestershire sauce","1 Tbsp each: dried thyme, red","15g (1 Tbsp) soy sauce","pepper flakes, black pepper","½ tsp cayenne","¼ tsp nutmeg","360g (1 ½ cups) fat-free","evaporated milk","100g (1 cup) Parmigiano Reggiano","672g (24oz) pasta of choice","30g (1½ Tbsp) honey","4 dried bay leaves"],"source":"Macro Cookbook","category":"Pasta & Noodles"},{"name":"carnitas inspired Pulled Pork Burritos","servings":15,"calories":510,"protein":35,"carbs":53,"fat":17,"ingredients":["1790g (64 oz) pork loin","5g (1 tsp) cornstarch","2 onions","15g (1 Tbsp) oil of choice","15g (1 Tbsp) oil","2 Tbsp salt","3 cloves garlic","1 Tbsp oregano","30g (2 Tbsp) tomato paste","2 tsp black pepper","Oregano, salt, pepper, onion","1 tsp cumin","powder to taste","Juice from 2 oranges","320g (1 ⅓ cups) jasmine rice","6 cloves garlic","745g (3 cups) chicken bone broth","¼ tsp cinnamon","15g (1 Tbsp) apple cider","vinegar"],"source":"Macro Cookbook","category":"Burritos & Handheld"},{"name":"Thai red Curry Peanut Chicken Bowls","servings":10,"calories":595,"protein":48,"carbs":60,"fat":16,"ingredients":["1790g (64oz) boneless, skinless Juice of 1-2 limes (to taste)","chicken thighs","Chopped Thai basil (handful)","120g (½ Cup) peanut butter","100g (⅓ Cup) Thai red curry","paste","30g (2 Tbsp) soy sauce","30g (2 Tbsp) fish sauce","640g (3 ¼ cups) short-grain rice","(dry weight)","1150g (4 ¾ cups) chicken bone","broth","50g (2 ½ Tbsp) honey","15g (1 Tbsp) grated ginger","15g (1 Tbsp) grated garlic","Juice + zest of 1 lime"],"source":"Macro Cookbook","category":"Soups & Stews"},{"name":"Chicken Parmesan Pasta","servings":10,"calories":475,"protein":43,"carbs":58,"fat":10,"ingredients":["1120g (40oz) chicken breast","300g (1 ¼ cups) 2% cottage","794g (28oz) can of peeled or","cheese","crushed tomatoes","240g (1 cup) fat-free milk","2 Tbsp tomato paste","100g (½ cup) 1/3-fat cream","2 Tbsp minced garlic","cheese","1.5 Tbsp coarse salt","150g (1 ½ cups) Parmigiano","1 Tbsp Italian seasoning","Reggiano","1 tsp black pepper","1 Tbsp white miso (optional)","1 tsp onion powder","Salt & pepper, to taste","1 tsp chili flakes","15g (1 Tbsp) Parmigiano","Reggiano"],"source":"Macro Cookbook","category":"Pasta & Noodles"},{"name":"Street taco chicken & chipotle lime rice","servings":10,"calories":510,"protein":46,"carbs":57,"fat":9,"ingredients":["1790g (64oz) boneless,","640g (3 cups) jasmine rice","skinless chicken thighs","1300g (5 ½ cups) bone broth","160g (¾ cup) orange juice","3 chipotle peppers","Juice of 3 limes","30g (2 Tbsp) tomato paste","45g (3 Tbsp) soy sauce","30g (2 Tbsp) garlic","2 Tbsp salt","5 tsp cumin","1 Tbsp onion powder","1 Tbsp garlic powder","1 Tbsp chili powder","2 tsp black pepper","2 tsp dried oregano"],"source":"Macro Cookbook","category":"Burritos & Handheld"},{"name":"Cheesy Chili Crisp Miso Orzo","servings":10,"calories":540,"protein":42,"carbs":60,"fat":13,"ingredients":["1340g (48oz) boneless, skinless 380g (1 ½ cups) whole milk","chicken thighs","60g (4 Tbsp) white miso paste","60g (4 Tbsp) white miso paste","1 Lemon","30g (2 Tbsp) chili crisp","200g (2 cups) mozzarella","40g (2 Tbsp) honey","30g (2 Tbsp) mirin","1 Tbsp garlic powder","Black pepper, to taste","1 white onion","672g (24 oz) orzo","2 bundles green onions","White/black sesame seeds"],"source":"Macro Cookbook","category":"Pasta & Noodles"},{"name":"Korean Beef Noodles","servings":7,"calories":500,"protein":36,"carbs":61,"fat":13,"ingredients":["900g (32oz) 96% ground beef","60g (¼ cup) light mayo","55g (3 Tbsp) gochujang","40g (2 Tbsp) gochujang","45g (3 Tbsp) soy sauce","15g (1 Tbsp) sriracha","30g (2 Tbsp) sugar-free","10g (2 tsp) yuzu ponzu","ketchup","10g (2 tsp) sesame oil","1 Tbsp garlic powder","15g (1 Tbsp) rice wine vinegar","Salt and pepper, to taste","5 packets Momofuku Sweet &","Green onion whites (reserve","Spicy noodles OR 45g (3 Tbsp)","greens for garnish)","Korean BBQ marinade of","60g (3 Tbsp) honey","choice with 425g (15 oz)","noodles of choice","15g (1 Tbsp) sesame oil","240g (1 cup) water"],"source":"Macro Cookbook","category":"Pasta & Noodles"},{"name":"Red enchilada chicken soup","servings":8,"calories":445,"protein":54,"carbs":18,"fat":15,"ingredients":["1790g (64oz) boneless, skinless 60g (3 Tbsp) honey","chicken thighs","100g (¾ cup) feta cheese","420g (1¾ cups) red enchilada","sauce","7oz can chipotle peppers","1 white onion","475g (2 cups) 2% Greek yogurt","360g (1½ cups) whole milk","1 bunch chopped cilantro","Juice of 1 lime","1½ Tbsp salt","1 Tbsp garlic powder","Dash of black pepper"],"source":"Macro Cookbook","category":"Soups & Stews"},{"name":"Japanese curry","servings":10,"calories":595,"protein":41,"carbs":null,"fat":11,"ingredients":["1350g (48oz) boneless,","10 Golden Curry cubes (Japanese","skinless chicken thighs","curry roux)","500g (3 medium) carrots","200g (¾ cup) applesauce or 2","700g (5 medium) Yukon","grated apples","gold potatoes","45g (3 Tbsp) sugar-free ketchup","3 sweet onions","500g (2½ cups) short-grain rice","40g (2 Tbsp) honey","960g (32oz) beef bone","broth","30g (2 Tbsp)","Worcestershire sauce"],"source":"Macro Cookbook","category":"Soups & Stews"},{"name":"Chili Crisp Orange Chicken Rice Bowls","servings":10,"calories":510,"protein":40,"carbs":59,"fat":10,"ingredients":["1790g (64oz) boneless, skinless 120g (½ cup) orange marmalade","chicken thighs","30g (2 Tbsp) chili crisp","240g (1 cup) orange juice","30g (2 Tbsp) seasoned rice","90g (6 Tbsp) soy sauce","vinegar","45g (3 Tbsp) mirin","20g (1 Tbsp) honey","1 Tbsp chili crisp","½ Tbsp ginger paste or minced","1 Tbsp garlic powder","ginger","1 Tbsp onion powder","1 tsp black pepper","Green onions","White/black sesame seeds","500g (2 ½ cups) rice"],"source":"Macro Cookbook","category":"Rice Bowls"},{"name":"Meat Lovers Pizza Mac n’ Cheese","servings":10,"calories":610,"protein":55,"carbs":57,"fat":21,"ingredients":["900g (32oz) 93% lean ground","800g (3⅓ cups) 2% cottage","beef","cheese","120g (1 cup) chopped turkey","100g (1 cup) extra sharp cheddar","pepperoni","cheese","1 yellow onion","100g (1 cup) mozzarella cheese","425g (1¾ cups) tomato sauce","100g (1 cup) Parmigiano","1 ½ Tbsp Italian seasoning","Reggiano cheese","1 Tbsp each: salt, onion","360g (1½ cups) 1% milk","powder, garlic powder, black","Salt and pepper, to taste","pepper","Dash of chili flakes"],"source":"Macro Cookbook","category":"Pasta & Noodles"},{"name":"Caramelized onion beef Burritos","servings":11,"calories":535,"protein":42,"carbs":54,"fat":16,"ingredients":["1340g (48oz) flat cut brisket or","4 yellow onions","chuck eye roast","30g (2 Tbsp) butter","OR lean steak of choice","960g (32oz) beef bone broth","45g (3 Tbsp) Worcestershire","30g (2 Tbsp) Worcestershire","15g (1 Tbsp) Dijon mustard","Sprig of rosemary and thyme","1 Tbsp salt","1 Tbsp garlic powder","2 tsp onion powder","2 tsp black pepper","1 tsp dried thyme","⅛ tsp nutmeg","100g (½ cup) bone broth"],"source":"Macro Cookbook","category":"Burritos & Handheld"},{"name":"Brisket Queso fries","servings":10,"calories":660,"protein":41,"carbs":65,"fat":26,"ingredients":["900g (32oz) flat cut brisket or","800g (3 ⅓ cups) 2% cottage","lean steak of choice","cheese","400g (14oz) can crushed fire-","100g (1 cup) American cheese","roasted tomatoes","150g (1 ½ cups) extra sharp","120g (½ cup) red enchilada","sauce","200g (7oz) can chipotle","peppers in adobo","80g (3 Tbsp) green chiles","cheddar cheese","80g (⅓ cup) red enchilada sauce","Salt & pepper to taste","5g (1 tsp) nutritional yeast","(optional)","60g (3 Tbsp) honey","Chopped cilantro (optional)","1 Tbsp salt","2 tsp onion powder","2 tsp black pepper"],"source":"Macro Cookbook","category":"Loaded & Sides"},{"name":"Quesabirria Burritos","servings":18,"calories":510,"protein":40,"carbs":52,"fat":14,"ingredients":["1790g (64oz) flat cut brisket or","226g reduced fat mozzarella","chuck eye roast","226g fat free mozzarella","2 onions","10 cloves garlic","20g (1 ½ Tbsp) avocado oil","cream","Handful chopped Cilantro","1-2 diced white onions","10 guajillo chiles","3 ancho chiles","1 Tbsp of each: coarse salt, ground","896g (32oz) beef bone broth","cumin, dried oregano, black pepper","240g (1 cup) water","1 tsp paprika","3 bay leaves"],"source":"Macro Cookbook","category":"Burritos & Handheld"},{"name":"Italian beef Sandwiches","servings":10,"calories":670,"protein":50,"carbs":55,"fat":27,"ingredients":["1790g (64oz) flat cut brisket or 1 hoagie or sandwich roll","chuck eye roast","(adjust calories based on","OR lean steak of choice","bread, 250-calorie roll used","340g (12oz) jar of","here)","pepperoncini","1 slice provolone cheese","340g (12oz) jar of Chicagostyle giardiniera*","1 Tbsp salt","1 Tbsp Italian seasoning","1 Tbsp garlic powder","1 Tbsp onion powder","1 tsp black pepper"],"source":"Macro Cookbook","category":"Burritos & Handheld"},{"name":"Chili Con Carne","servings":10,"calories":500,"protein":58,"carbs":12,"fat":23,"ingredients":["2010g (72oz) flat cut brisket or chuck 1 ½ Tbsp salt","eye roast","1 ½ Tbsp ground cumin (optional)","OR lean steak of choice","3 tsp black pepper","45g (3 Tbsp) avocado oil","3 tsp dried oregano","2 medium yellow onions","¼ tsp powdered cinnamon","8 cloves garlic","Dash of smoked paprika (to taste)","60g (4 Tbsp) tomato paste","355g (12oz) Modelo Negro beer","15g (1 Tbsp) Worcestershire sauce","475g (16oz) beef bone broth","200g (¾ cup) red enchilada sauce"],"source":"Macro Cookbook","category":"Soups & Stews"},{"name":"Hot Honey Brisket Ragu Pasta","servings":10,"calories":517,"protein":43,"carbs":63,"fat":11,"ingredients":["1340g (48oz) brisket (or lean","672g (24 oz) pasta of choice","steak of choice)","2 yellow onions","15g (1 Tbsp) olive oil","10 cloves garlic","45g (3 Tbsp) tomato paste","100g (5 Tbsp) honey","2 Tbsp chili flakes","794g (28oz) fire-roasted","crushed tomatoes","1 sprig rosemary","Handful of fresh thyme","1–2 bay leaves","Parmigiano Reggiano","Chopped Chives","475g (16oz) beef bone broth"],"source":"Macro Cookbook","category":"Pasta & Noodles"},{"name":"Chipotle brisket breakfast burritos","servings":12,"calories":505,"protein":48,"carbs":40,"fat":17,"ingredients":["1340g (48 oz) flat cut brisket","600g (2 ½ cups) egg whites","200g (7 oz) can chipotle peppers","5 whole eggs","200g (¾ cup) red enchilada sauce 350g (1 ½ cups) 2% cottage","40g (2 Tbsp) honey","cheese","15g (1 Tbsp) apple cider vinegar","2 tsp corn starch","1 Tbsp salt","100g (1 cup) cheddar cheese","1 Tbsp garlic powder","1 Tbsp onion powder","2 tsp black pepper","400g (1 ⅔ cups) 0% Greek","yogurt","50g (3 Tbsp) hot sauce","12 large tortillas","Salt, garlic powder,","Cilantro","and pepper, to taste"],"source":"Macro Cookbook","category":"Burritos & Handheld"},{"name":"Beef Stroganoff orzo","servings":12,"calories":550,"protein":51,"carbs":60,"fat":13,"ingredients":["1790g (64oz) lean steak of","480g (1 ¾ cups) 0% Greek yogurt","choice","240ml (1 cup) 1% milk","10 grated garlic cloves","20g (4 tsp) Dijon mustard","45g (3 Tbsp) butter","Chives, chopped, for garnish","2 yellow onions, diced","300g (3 cups) frozen mixed","mushrooms","907g (4 cups) beef bone broth","1 Tbsp cornstarch","1 Tbsp cold water","60g (4 Tbsp) Dijon mustard","Salt, pepper, and onion powder","to taste","900g (32oz) orzo"],"source":"Macro Cookbook","category":"Pasta & Noodles"},{"name":"BBQ beef loaded sweet potatoes","servings":10,"calories":555,"protein":51,"carbs":52,"fat":17,"ingredients":["1790g (64oz) flat cut brisket or","15g (1 Tbsp) corn starch","chuck eye roast","15g (1 Tbsp) water","OR lean steak of choice","300g (1 ¼ cups) Dr Pepper","24g (3 Tbsp) BBQ seasoning","15ml (1 Tbsp) Worcestershire","sauce","30g (2 Tbsp) no-sugar-added","ketchup","3 chipotle peppers","200g (2 cups) cheddar cheese","400g (1½ cups) 0% Greek yogurt","Milk and garlic powder to taste"],"source":"Macro Cookbook","category":"Loaded & Sides"},{"name":"French Onion Pasta","servings":12,"calories":540,"protein":51,"carbs":52,"fat":14,"ingredients":["1360g (48oz) chicken thighs","4 diced yellow onions","45g (3 Tbsp) Worcestershire","960g (32oz) beef bone broth","sauce","15g (1 Tbsp) soy sauce","30g (2 Tbsp) minced garlic","15g (1 Tbsp) Dijon mustard","1 Tbsp fine grain salt","2 tsp black pepper","1 tsp dried thyme","100g (½ cup) bone broth","Rosemary sprig","1 Tbsp garlic powder","2 tsp onion powder"],"source":"Macro Cookbook","category":"Pasta & Noodles"},{"name":"Cheesesteak Pasta","servings":12,"calories":520,"protein":48,"carbs":49,"fat":15,"ingredients":["1350g (48oz) flat cut brisket","800g 2% cottage cheese","or chuck eye roast","100g Parmigiano Reggiano","1 Tbsp each: Salt, pepper,","150g provolone","garlic powder, and onion","350ml 1% milk","powder","Salt & pepper to taste","240g (8oz) beef bone broth","4 red bell peppers","4 poblanos","672g (24oz) pasta of choice","(dry weight)","4 jalapenos","2 sweet onions"],"source":"Macro Cookbook","category":"Pasta & Noodles"},{"name":"Buffalo Chicken Bacon Ranch Rice Bowls","servings":7,"calories":570,"protein":56,"carbs":35,"fat":20,"ingredients":["1340g (48oz) chicken thighs","75g (⅓ cup) Buffalo wing","200g (¾ cup) Buffalo wing","sauce","sauce*","Handful of chopped chives or","30g (2 Tbsp) soy sauce","green onions","1 packet ranch seasoning","200g (¾ cup) 0% Greek","40g (2 Tbsp) honey","yogurt","3 Tbsp cornstarch","3 Tbsp cold water","240g rice (raw weight)","560g bone broth","Salt + garlic powder to taste"],"source":"Macro Cookbook","category":"Rice Bowls"},{"name":"Broccoli Cheddar Soup Mac n’ Cheese","servings":12,"calories":550,"protein":46,"carbs":51,"fat":18,"ingredients":["1340g (48oz) boneless, skinless 800g (3⅓ cups) 2% cottage","chicken thighs","cheese","250g (2 cups) extra sharp","2 yellow onions","30g (2 Tbsp) minced garlic","30g (2 Tbsp) Worcestershire","sauce","20g (4 tsp) Dijon mustard","1 Tbsp each: onion powder,","cheddar cheese","30g (¼ cup) cheddar powder","10g (1 Tbsp) nutritional yeast","650g (2¾ cups) whole milk","Salt and pepper, to taste","80g (⅓ cup) lemon juice","garlic powder, salt","5g (1 tsp) baking soda","2 tsp black pepper","2 tsp smoked paprika","672g (24 oz) pasta of choice","400g (4 cups) Broccoli florets"],"source":"Macro Cookbook","category":"Pasta & Noodles"},{"name":"Chicken Tinga","servings":10,"calories":180,"protein":24,"carbs":5,"fat":7,"ingredients":["670g (24oz) boneless, skinless","4 tsp oregano","chicken thighs","1 tsp smoked paprika","670g (24oz) chicken breasts","½ tsp cumin","45g (3 Tbsp) olive oil","2 white onions","3 Tbsp mined garlic","1 Tbsp tomato paste","1 Tbsp salt","Black pepper to taste","3 bay leaves","794g (28oz) can fire-roasted","diced tomatoes","50g (just over 3 Tbsp) apple","cider vinegar","1 can (198g/7oz) chipotle"],"source":"Macro Cookbook","category":"Proteins & Other"},{"name":"Chili Crisp Orange Chicken","servings":16,"calories":200,"protein":22,"carbs":10,"fat":6,"ingredients":["1790g (64oz) boneless, skinless 120g (½ cup) orange marmalade","chicken thighs","30g (2 Tbsp) chili crisp","240g (1 cup) orange juice","30g (2 Tbsp) seasoned rice","90g (6 Tbsp) soy sauce","vinegar","45g (3 Tbsp) mirin","20g (1 Tbsp) honey","1 Tbsp chili crisp","½ Tbsp ginger paste or minced","1 Tbsp garlic powder","ginger","1 Tbsp onion powder","1 tsp black pepper","1 Tbsp cornstarch","2 Tbsp cold water"],"source":"Macro Cookbook","category":"Soups & Stews"},{"name":"beef Birria","servings":16,"calories":175,"protein":28,"carbs":1,"fat":6,"ingredients":["1790g (64oz) flat cut","20g (1 ½ Tbsp) avocado oil","brisket or chuck eye roast","2 onions","OR lean steak of choice","10 cloves garlic","1 Tbsp each: coarse salt,","ground cumin, dried","oregano, black pepper","1 tsp paprika","3 bay leaves","10 guajillo chiles","3 ancho chiles","960g (32oz) beef bone broth","240g (1 cup) water","90g (6 Tbsp) apple cider vinegar","240g (1 cup) red enchilada sauce","Handful of cilantro stems"],"source":"Macro Cookbook","category":"Proteins & Other"},{"name":"Peanut Miso Chicken","servings":12,"calories":210,"protein":26,"carbs":7,"fat":9,"ingredients":["1360g (48oz) boneless, skinless chicken thighs","120g (½ cup) peanut butter","60g (4 Tbsp) white miso paste","60g (4 Tbsp) soy sauce","40g (2 ½ Tbsp) maple syrup","30g (2 Tbsp) rice vinegar","20g (4 tsp) ginger purée","20g (4 tsp) garlic purée","Red chili flakes, black pepper & sesame seeds to taste","Splash of bone broth or water","Green Onions"],"source":"Macro Cookbook","category":"Proteins & Other"},{"name":"Honey Harissa chicken","servings":16,"calories":160,"protein":23,"carbs":4,"fat":5,"ingredients":["1790g (64oz) boneless, skinless chicken thighs","105g (7 Tbsp) harissa paste","15g (1 Tbsp) white miso paste (optional)","2 tsp smoked paprika","2 tsp dried thyme or oregano","1 tsp garlic powder","1 Tbsp salt (or to taste)","Dash of black pepper","60g (3 Tbsp) honey","Juice of 1 lemon","3 Tbsp harissa"],"source":"Macro Cookbook","category":"Proteins & Other"},{"name":"Chimichurri Steak","servings":12,"calories":210,"protein":25,"carbs":3,"fat":11,"ingredients":["1340g (48oz) flank steak or","60g (¼ cup) olive oil","lean steak of choice","60g (¼ cup) red wine vinegar","1 yellow onion","15g (1 Tbsp) minced garlic","1 ½ Tbsp salt","2 tsp black pepper","2 tsp garlic powder","2 tsp oregano","30g (2 Tbsp) red wine vinegar","1 bunch chopped cilantro or","parsley","4 cloves minced garlic","2 small red chilies (e.g., red","jalapeños or Fresno chilies)","1 tsp dried oregano","1 tsp coarse salt","½ tsp black pepper","15g (1 Tbsp) olive oil","240g (1 cup) puréed fresh","pineapple*"],"source":"Macro Cookbook","category":"Proteins & Other"},{"name":"Green Enchilada Chicken","servings":10,"calories":175,"protein":22,"carbs":6,"fat":5,"ingredients":["1790g (64oz) boneless,","1 bunch cilantro","skinless chicken thighs","60g (3 Tbsp) honey","420g (1 ¾ cups) green","enchilada sauce","226g (8oz) Hatch green","chiles","1 white onion","Juice of 1 lime","1 ½ Tbsp salt","1 Tbsp garlic powder","Dash of black pepper"],"source":"Macro Cookbook","category":"Proteins & Other"},{"name":"Butter Chicken","servings":8,"calories":260,"protein":34,"carbs":7,"fat":11,"ingredients":["900g (32oz) chicken breast","30g (2 Tbsp) butter","250g (1 cup) plain 0% Greek","yogurt or Skyr","30g (2 Tbsp) butter","2 onions","2 Tbsp tomato paste","2 Tbsp garlic paste","2 Tbsp ginger paste","2 Tbsp paprika","2 Tbsp garam masala","1 Tbsp chicken bouillon","1 tsp cayenne","1 Tbsp sugar or zero calorie","1 tsp cumin","sweetener","1 tsp coriander","2 tsp salt","1 (14oz) can crushed fireroasted tomatoes"],"source":"Macro Cookbook","category":"Proteins & Other"},{"name":"Honey Chipotle Chicken","servings":12,"calories":175,"protein":23,"carbs":8,"fat":6,"ingredients":["1360g (48oz) boneless, skinless chicken thighs","240g (1 cup) orange juice","200g (7oz) can chipotle peppers","45g (3 Tbsp) soy sauce","30g (2 Tbsp) apple cider vinegar","30g (2 Tbsp) garlic purée","2 tsp cumin","1 Tbsp salt","1 ½ tsp black pepper","2 tsp onion powder","80g (4 Tbsp) honey","15g (1 Tbsp) avocado oil"],"source":"Macro Cookbook","category":"Proteins & Other"},{"name":"CARNITAS INSPIRED PULLED PORK","servings":16,"calories":215,"protein":24,"carbs":5,"fat":10,"ingredients":["1790g (64 oz) pork loin","5g (1 tsp) cornstarch","1 tsp water","2 onions","15g (1 Tbsp) oil of choice","2 Tbsp salt","1 Tbsp oregano","2 tsp black pepper","1 tsp cumin","Juice from 2 oranges","6 cloves garlic","¼ tsp cinnamon","15g (1 Tbsp) apple cider vinegar","3 bay leaves"],"source":"Macro Cookbook","category":"Proteins & Other"},{"name":"Tzatziki chicken","servings":12,"calories":170,"protein":27,"carbs":4,"fat":6,"ingredients":["1340g (48oz) boneless,","400g (1 ¾ cups) 0% Greek yogurt","skinless chicken breast","150g (½ cup) light sour cream","4-5 garlic cloves","20g (1 Tbsp) honey","15g (1 Tbsp) olive oil","1 Tbsp dried oregano","1 Tbsp salt","1 Tbsp onion powder","1 tsp black pepper","1 cucumber","1 tsp salt","1 lemon","15g (1 Tbsp) olive oil","1 tsp chopped dill","2 tsp chopped chives","1 tsp garlic powder","Dash of black pepper","3 Tbsp corn starch"],"source":"Macro Cookbook","category":"Proteins & Other"},{"name":"Pepper steak","servings":12,"calories":175,"protein":26,"carbs":4,"fat":7,"ingredients":["1350g (48oz) flat cut brisket or chuck eye roast","1 Tbsp each: Salt, pepper, garlic powder, and onion powder","240g (8oz) beef bone broth","4 red bell peppers","4 poblanos","4 jalapenos","2 sweet onions"],"source":"Macro Cookbook","category":"Proteins & Other"},{"name":"Thai red Curry Peanut Chicken","servings":16,"calories":180,"protein":24,"carbs":5,"fat":7,"ingredients":["1790g (64oz) boneless, skinless Juice of 1-2 limes (to taste)","chicken thighs","Chopped Thai basil (handful)","120g (½ Cup) peanut butter","100g (⅓ Cup) Thai red curry","paste","30g (2 Tbsp) soy sauce","30g (2 Tbsp) fish sauce","50g (2.5 Tbsp) honey","15g (1 Tbsp) grated ginger","15g (1 Tbsp) grated garlic","Juice + zest of 1 lime"],"source":"Macro Cookbook","category":"Soups & Stews"},{"name":"Caramelized onion beef","servings":12,"calories":200,"protein":28,"carbs":1,"fat":9,"ingredients":["1340g (48oz) flat cut brisket or 4 yellow onions","chuck eye roast","30g (2 Tbsp) butter","OR lean steak of choice","960g (32oz) beef bone broth","45g (3 Tbsp) Worcestershire","30g (2 Tbsp) Worcestershire","15g (1 Tbsp) Dijon mustard","1 Tbsp salt","1 Tbsp garlic powder","Optional: sprig of rosemary and","thyme","2 tsp onion powder","2 tsp black pepper","1 tsp dried thyme","⅛ tsp nutmeg","100g (½ cup) bone broth"],"source":"Macro Cookbook","category":"Proteins & Other"},{"name":"Street taco chicken","servings":16,"calories":165,"protein":23,"carbs":6,"fat":5,"ingredients":["1790g (64oz) boneless, skinless","1 bunch cilantro","chicken thighs","Juice of 2 limes","160g (¾ cup) orange juice","2 white onions","Juice of 3 limes","45g (3 Tbsp) soy sauce","30g (2 Tbsp) minced garlic","2 Tbsp salt","5 tsp cumin","1 Tbsp onion powder","1 Tbsp garlic powder","1 Tbsp chili powder","2 tsp black pepper","2 tsp dried oregano"],"source":"Macro Cookbook","category":"Burritos & Handheld"},{"name":"Hot Honey Brisket Ragu","servings":10,"calories":275,"protein":34,"carbs":13,"fat":10,"ingredients":["1340g (3 lbs) brisket (or lean","1 sprig rosemary","steak of choice)","Handful of fresh thyme","2 yellow onions","1–2 bay leaves","15g (1 Tbsp) olive oil","10 cloves garlic","45g (3 Tbsp) tomato paste","100g (5 Tbsp) honey","2 Tbsp chili flakes","794g (28oz) fire-roasted","crushed tomatoes","475g (16oz) beef bone broth"],"source":"Macro Cookbook","category":"Pasta & Noodles"},{"name":"GARLIC ROSEMARY CHICKEN","servings":12,"calories":150,"protein":23,"carbs":1,"fat":5,"ingredients":["1360g (48oz) chicken thighs","45g (3 Tbsp) Worcestershire sauce","30g (2 Tbsp) minced garlic","15g (1 Tbsp) Dijon mustard","1 Tbsp fine grain salt","2 tsp black pepper","1 tsp dried thyme","100g (½ cup) bone broth","1 Tbsp garlic powder","2 tsp onion powder","Rosemary sprig"],"source":"Macro Cookbook","category":"Proteins & Other"},{"name":"Italian beef","servings":11,"calories":220,"protein":24,"carbs":4,"fat":12,"ingredients":["1790g (64oz) flat cut brisket or chuck eye roast OR lean steak","of choice","340g (12oz) jar of pepperoncini","340g (12oz) jar of Chicago-style giardiniera*","1 Tbsp salt","1 Tbsp Italian seasoning","1 Tbsp garlic powder","1 Tbsp onion powder","1 tsp black pepper","20g (1 Tbsp) honey"],"source":"Macro Cookbook","category":"Proteins & Other"},{"name":"Hawaiian BBQ Chicken","servings":10,"calories":165,"protein":23,"carbs":6,"fat":5,"ingredients":["1790g (64oz) boneless, skinless 120g (½ cup) sugar-free BBQ","chicken thighs","sauce","120g (½ cup) sugar-free BBQ","2 stalks green onions","sauce","45g (3 Tbsp) soy sauce","15g (1 Tbsp) fish sauce","20g (4 tsp) grated ginger","3 Tbsp corn starch","3 Tbsp water","700g (4 ½ cups) fresh","pineapple (1 whole pineapple)","Garlic powder, onion powder,","smoked paprika, and black","pepper, to taste"],"source":"Macro Cookbook","category":"Proteins & Other"},{"name":"beef Bolognese","servings":12,"calories":260,"protein":28,"carbs":10,"fat":12,"ingredients":["1340g (48oz) 93% ground beef","45g (3 Tbsp) Butter","5 slices center-cut bacon","3 onions","1580g (two 28oz cans) crushed","12 cloves of garlic","tomatoes","90g (6 Tbsp) Tomato Paste","2 Tbsp each: dried oregano,","454g (16oz) beef bone broth","salt","30g (2 Tbsp) Worcestershire","1 Tbsp each: dried thyme, red","pepper flakes, black pepper","½ tsp cayenne","¼ tsp nutmeg","sauce","15g (1 Tbsp) soy sauce","4 dried bay leaves"],"source":"Macro Cookbook","category":"Pasta & Noodles"},{"name":"Chili Crisp Miso Chicken","servings":12,"calories":185,"protein":23,"carbs":6,"fat":6,"ingredients":["1340g (48oz) boneless, skinless chicken thighs","60g (4 Tbsp) white miso paste","30g (2 Tbsp) chili crisp","40g (2 Tbsp) honey","30g (2 Tbsp) mirin","1 Tbsp garlic powder","Black pepper and salt to taste","1 white onion","White/black sesame seeds"],"source":"Macro Cookbook","category":"Soups & Stews"},{"name":"Honey Chipotle Beef","servings":12,"calories":180,"protein":25,"carbs":5,"fat":7,"ingredients":["1340g (48 oz) flat cut brisket or chuck eye roast","OR lean steak of choice","200g (7 oz) can chipotles in adobo","200g (¾ cup) red enchilada sauce","40g (2 Tbsp) honey","15g (1 Tbsp) apple cider vinegar","1 Tbsp salt","1 Tbsp garlic powder","1 Tbsp onion powder","2 tsp black pepper"],"source":"Macro Cookbook","category":"Proteins & Other"},{"name":"Korean BBQ Beef","servings":12,"calories":295,"protein":30,"carbs":12,"fat":14,"ingredients":["1340g (48oz) flat cut brisket or 30g (2 Tbsp) toasted sesame oil","chuck eye roast","60g (4 Tbsp) premium oyster","OR lean steak of choice","sauce: Recommended brands","75g (5 Tbsp) soy sauce","include Lee Kum Kee or Lucky","Brand (vegan).","55g (3 Tbsp) gochujang","45g (3 Tbsp) mirin","40g (2 Tbsp) honey","30g (2 Tbsp) garlic purée","15g (1 Tbsp) ginger purée","Black pepper: to taste"],"source":"Macro Cookbook","category":"Proteins & Other"},{"name":"Pineapple teriyaki pulled pork","servings":16,"calories":230,"protein":24,"carbs":11,"fat":9,"ingredients":["1790g (64oz) Pork loin","1 Pineapple (400g)","100g (⅓ cup) soy sauce","90g (6 Tbsp) mirin","80g (4 Tbsp) honey","2 Tbsp grated ginger","2 Tbsp grated garlic","4 Tbsp cornstarch","4 Tbsp cold water"],"source":"Macro Cookbook","category":"Proteins & Other"},{"name":"Dr Pepper BBQ Beef","servings":16,"calories":170,"protein":25,"carbs":3,"fat":7,"ingredients":["1790g (64oz) flat cut brisket or","40g (2 Tbsp) honey","chuck eye roast","OR lean steak of choice","300g (1 ¼ cups) Dr Pepper","24g (3 Tbsp) BBQ seasoning","25ml (1½ Tbsp) apple cider vinegar","10g (2 tsp) Dijon mustard","30g (2 Tbsp) ketchup","120g (½ cup) Dr Pepper","15ml (1 Tbsp) Worcestershire","sauce","30g (2 Tbsp) no-sugar-added","ketchup","3 chipotle peppers","15g (1 Tbsp) corn starch","15g (1 Tbsp) water"],"source":"Macro Cookbook","category":"Proteins & Other"},{"name":"Honey Teriyaki Chicken","servings":12,"calories":175,"protein":23,"carbs":10,"fat":5,"ingredients":["1360g (48oz) chicken thighs","75g (5 Tbsp) soy sauce","30g (2 Tbsp) dark soy sauce","80g (4 Tbsp) honey","60g (4 Tbsp) mirin","2 Tbsp ginger","1 Tbsp garlic","24g (3 Tbsp) cornstarch","60g (4 Tbsp) cold water"],"source":"Macro Cookbook","category":"Proteins & Other"},{"name":"Buffalo Ranch Chicken","servings":12,"calories":210,"protein":24,"carbs":5,"fat":8,"ingredients":["1340g (48oz) chicken thighs","75g (⅓ cup) Buffalo wing","200g (¾ cup) Buffalo wing","sauce","sauce*","Handful of chopped chives or","30g (2 Tbsp) soy sauce","green onions","1 packet ranch seasoning","40g (2 Tbsp) honey","45g (3 Tbsp) cornstarch","45g (3 Tbsp) cold water","200g (¾ cup) 0% Greek","yogurt","75g (⅓ cup) light sour cream","Pinch of chopped dill","(optional)"],"source":"Macro Cookbook","category":"Proteins & Other"},{"name":"CHICKEN FRIED RICE","servings":5,"calories":500,"protein":41,"carbs":47,"fat":17,"ingredients":["25oz chicken breast,","300g mixed frozen veggies of","thin sliced and diced","choice (I used carrots, peas,","1 tablespoon garlic","mushrooms and onions)","powder","200g egg whites","2 tablespoons soy","3 eggs","sauce","700g day-old cooked rice","1 tablespoon avocado","(300g dry weight)","oil (or any neutral oil)","3 tablespoons soy sauce","1 tablespoon sriracha","3 tablespoons sesame oil"],"source":"Stealth Health","category":"Rice Bowls"},{"name":"GARLIC PARMESAN CHICKEN ALFREDO","servings":5,"calories":505,"protein":44,"carbs":52,"fat":15,"ingredients":["16oz skinless chicken","thighs","350g 2% cottage","10g olive oil (2 tspns)","cheese","2 tblspn white wine","80g 1% milk","vinegar","85g fresh Parmigiano","1 tsp garlic powder","Reggiano","1/2 tsp dried oregano","Pinch of salt, pepper","1/4 tsp onion powder","and garlic powder","1/4 tsp chili flakes","320g linguine (dry","1/4 tsp salt","weight)","1/4 tsp pepper","10g Honey (2 tspns)","20g Parmigiano","Reggiano"],"source":"Stealth Health","category":"Pasta & Noodles"},{"name":"CAJUN CHICKEN MAC N CHEESE","servings":5,"calories":505,"protein":45,"carbs":54,"fat":13,"ingredients":["325g pasta","300g 2% cottage","cheese","18oz chicken breast","Juice of 1 lemon","1 tablespoon olive oil","1 tablespoon Cajun","seasoning","60g mozzarella","60g cheddar cheese","25g Cheddar powder","3g Nutritional yeast","1 tablesooon Cajun","1 teaspoon coarse salt","seasoning","1 teaspoon pepper","100g milk","1 tspn garlic powder","1 tablespoon of","Louisiana hot sauce"],"source":"Stealth Health","category":"Pasta & Noodles"},{"name":"ORZO BURRITO BOWLS","servings":6,"calories":520,"protein":41,"carbs":61,"fat":12,"ingredients":["380g orzo","24oz skinless chicken","thighs","Seasoned with: salt,","garlic, onion, smoked","paprika, chili powder","120g guacamole","250g greek yogurt","Chipotle hot sauce","Cilantro","1 lime"],"source":"Stealth Health","category":"Pasta & Noodles"},{"name":"LEMON PARMESAN CHICKEN & RICE","servings":5,"calories":495,"protein":40,"carbs":52,"fat":15,"ingredients":["24oz chicken breast","Juice of 1 lemon","180g fat free","1 tablespoon olive oil","evaporated milk*","1 tablespoon salt","80g Parmigiano","1/2 tablespoon pepper","reggiano","1 tspn garlic powder","Juice of 1/2 lemon","Pepper to taste","320g basmati rice","(Reserve other half of","30g butter","lemon for deglazing","480g water","pan after cooking","chicken)","*NOT CONDENSED","MILK"],"source":"Stealth Health","category":"Rice Bowls"},{"name":"ORANGE CHICKEN","servings":5,"calories":510,"protein":40,"carbs":58,"fat":13,"ingredients":["32oz skinless chicken","thighs","3/4 cup orange juice","5 tblspns corn starch","2 tblspns avocado oil (or any","1/2 tspn onion powder","neutral oil)","1/2 tspn garlic powder","3 tblspns soy sauce","1/2 tspn ginger","1.5 tblspns rice vinegar","powder","2 tblspns zero calorie brown","1/2 tspn salt","sugar","1 tspn black pepper","~1/2 tblspn grated ginger","3 cloves fresh minced garlic","280g basmati rice","1/4 tspn black pepper","(Uncooked weight)","1 tblspn sugar free orange","marmalade","1.5 tblspn corn starch"],"source":"Stealth Health","category":"Proteins & Other"},{"name":"SPICY PEANUT SAUCE NOODLES","servings":5,"calories":510,"protein":42,"carbs":60,"fat":13,"ingredients":["20oz chicken breast","35g soy sauce","100g creamy peanut butter","25g sriracha","40g soy sauce","10g lime juice","20g sriracha","75g honey","Garlic powder, onion","40g chopped sundried","powder, red chili","tomatoes","flakes","2-3 tablespoons of lime juice","10 cloves minced","300g noodles of choice (I used","garlic","linguine, but any asian noodle","5 green onions","works as well)","(separate \"whites\"","and \"greens\" of the","onion)"],"source":"Stealth Health","category":"Pasta & Noodles"},{"name":"CHIPOTLE CHICKEN & BACON ALFREDO","servings":4,"calories":535,"protein":51,"carbs":62,"fat":12,"ingredients":["12oz skinless chicken","thighs","168g evaporated fat free milk","Seasoned with salt,","(half a 12oz can)","garlic, onion, paprika,","300g 2% cottage cheese","chili powder","50g Parmigiano Reggiano","1-2 chipotle peppers","4 slices of center cut","1 tablespoon adobo sauce","bacon","Salt, pepper to taste","Dice, cook in pan","until crispy","320g Protein penne","Garnish with chives","and red chili flakes"],"source":"Stealth Health","category":"Pasta & Noodles"},{"name":"QUESO CHICKEN & RICE","servings":5,"calories":515,"protein":48,"carbs":51,"fat":13,"ingredients":["24oz chicken breast","1.5 tsp avocado oil","250g 2% Plain Greek yogurt","1.5 packets of taco","85g red enchilada sauce","seasoning of choice","85g pico de gallo","85g cheddar cheese","300g basmati rice","100g 1/3 fat cream cheese","65g diced green chiles","20g nutritional yeast","10g brown sugar","1/2 tsp garlic powder","1/2 tsp onion powder","Pinch of salt","Chopped Cilantro"],"source":"Stealth Health","category":"Rice Bowls"},{"name":"LOADED CHEDDAR FRIES","servings":6,"calories":500,"protein":41,"carbs":42,"fat":19,"ingredients":["1 bag of frozen fries (I","26oz 93% beef","used Ore-Ida extra","2 packets taco","crispy crinkle fries).","seasoning","Either buy pre-","1/3 cup water","seasoned, or season","generously with salt,","80g fat free cheddar","garlic, onion, paprika","150g 2% or low fat","and cumin","cheddar","Season top layer with","2 diced sweet onions","garlic + cumin"],"source":"Stealth Health","category":"Loaded & Sides"},{"name":"HONEY GARLIC CHICKEN & RICE","servings":5,"calories":495,"protein":37,"carbs":59,"fat":13,"ingredients":["28oz chicken breast","2 tblspns soy sauce","1 tblspn chili crisp","1 teaspoon minced garlic","1 tblspn garlic powder","1 tblspn chili crisp","1/2 tblspn pepper","1 tblspn sesame oil","1/2 tblspn gochugaru","4 tblspns honey","2 tblspns soy sauce","1 tblspn mirin","1 tblspn avocado oil","1/2 tblspn gochugaru","280g basmati rice","1 white onion","Green onions (for garnish)"],"source":"Stealth Health","category":"Rice Bowls"},{"name":"KOREAN BEEF RICE BOWLS","servings":5,"calories":500,"protein":34,"carbs":53,"fat":16,"ingredients":["24oz 96% ground","90g light Mayo","beef","50g Sriracha","2 tspn sesame oil","Juice from ½ a lemon (about 1","1.5 tablespoon","tablespoon)","minced garlic","1/2 tspn garlic powder","30g brown sugar","2 tblspn milk or water","80g soy sauce","Salt to taste","20g gochujang","3 green onions","300g basmati rice"],"source":"Stealth Health","category":"Rice Bowls"},{"name":"GREEN CHILI QUESO MAC N CHEESE","servings":5,"calories":510,"protein":47,"carbs":60,"fat":12,"ingredients":["400g 2% cottage","16oz skinless Chicken thighs","cheese","Season equally with salt,","45g white cheddar","pepper, garlic, onion, paprika,","1 tspn minced garlic","chili powder","25g white cheddar","powder (you can use","cheddar powder from","1 box Barilla protein pasta","(14.5oz) or pasta of choice","boxed Mac)","65g fat free milk","Pinch of cilantro","1 small can of hatch","green chiles"],"source":"Stealth Health","category":"Pasta & Noodles"},{"name":"PEPPERONI PIZZA BAGEL BITES","servings":5,"calories":515,"protein":30,"carbs":65,"fat":17,"ingredients":["10 English muffins","400g Marinara","50g \"umami\" black garlic sauce (found at","Whole Foods) or low sodium soy sauce","33g parmigiano reggiano","60g chopped hot peppers","200g 2% Mozzarella","60 slices turkey pepperoni","33g hot honey"],"source":"Stealth Health","category":"Proteins & Other"},{"name":"HONEY GARLIC CHILI CRISP NOODLES","servings":5,"calories":505,"protein":40,"carbs":63,"fat":11,"ingredients":["25oz chicken breast","5 dried ramen packets (400g","1 tablespoon garlic","of noodle","2 tspn salt (adjust to","taste)","1 teaspoon paprika","1 tspn corn starch","1 teaspoon pepper","75g Soy Sauce","1 tablespoon soy","25g Miso","sauce","25g Chili Crisp or Chili Oil","1 tablespoon chili","10g Sesame Oil","crisp (jarred","10g Honey","condiment found in","most asian aisles)","1 tablespoon honey","1 tablespoon sriracha","Garnish with chili crisp,","sesame seeds, and green","onions"],"source":"Stealth Health","category":"Pasta & Noodles"},{"name":"ITALIAN MEATBALL PASTA","servings":5,"calories":510,"protein":45,"carbs":60,"fat":11,"ingredients":["24oz 96% beef","1 medium white onion","1/4 cup breadcrumbs","1 stalk of celery","80g milk","1 medium carrot, peeled and","30g fresh parmigiano","chopped","reggiano","4 cloves garlic","1.5 tsp salt","1 can San Marzano tomatoes","1.5 tablespoon","1 tblspn gochujang","minced garlic","Couple leaves of fresh basil","1 tspn red chili flakes","30g Parmigiano reggiano","2 tspn fresh basil","Black pepper","300g pasta","1 tspn soy sauce"],"source":"Stealth Health","category":"Pasta & Noodles"},{"name":"EVERYTHING BAGEL CHICKEN ALFREDO","servings":5,"calories":510,"protein":51,"carbs":54,"fat":12,"ingredients":["320g Protein penne","16oz skinless chicken thighs","12oz evaporated fat","Season with salt, garlic, onion,","free milk","pepper","350g 2% cottage","cheese","100g Parmigiano","Reggiano","Salt, pepper to taste","1.5 tablespoon","everything bagel","seasoning"],"source":"Stealth Health","category":"Pasta & Noodles"},{"name":"POLLO ASADO BURRITO BOWLS","servings":5,"calories":500,"protein":50,"carbs":52,"fat":10,"ingredients":["28oz skinless chicken","5 Bell peppers","thighs","2 onions","1/2 cup orange juice","1 packet of taco seasoning","4 tblspns soy sauce","2 tblspns lime juice","8 cloves garlic","2 tspn cumin","1 tspn salt","1 tspn black pepper","1 tspn onion","3 dried ancho chiles","300g Spanish RightRice","100g plain Greek yogurt","50g hot sauce","Pinch of salt","Add milk/water 1 tspn at a","time until desired consistency","3 chipotle peppers","Top with Pico, hot sauce, and","20g honey","red onions","1 Handful cilantro"],"source":"Stealth Health","category":"Burritos & Handheld"},{"name":"CHICKEN BULGOGI RICE BOWLS","servings":5,"calories":495,"protein":41,"carbs":53,"fat":13,"ingredients":["32 oz skinless chicken Cucumber Salad:","thighs, tenderized","400g diced cucumbers","and sliced into strips","400g diced tomatoes","Juice of half a lemon","Salt + pepper to taste","4 tbsp gochujang","2 tbsp soy sauce","280g basmati rice","3 tbsp brown sugar","1 bag salad mix of choice","2 tbsp minced garlic","(optional)","1 tsp ginger paste","1.5 tbsp mirin","Leftover marinade (simmered)","1 tbsp sesame oil","3 tablespoons black garlic","1/2 tsp black pepper","Umami sauce (found at Whole","Foods) or soy sauce","Splash of Sriracha"],"source":"Stealth Health","category":"Rice Bowls"},{"name":"HALAL CART-STYLE CHICKEN & RICE","servings":5,"calories":505,"protein":43,"carbs":50,"fat":15,"ingredients":["25oz chicken breast","1 small onion","226g 0% greek yogurt","1 tblspn butter","40g olive oil","1 tspn turmeric","2 tblspn shawarma","1/2 tspn cumin","seasoning or 7 spice","1 tspn sea salt","2 tspn smoked","300g basmati rice, rinsed","paprika","2.75 cups of chicken broth","1 tblspn minced garlic","1 tspn salt","226g 0% greek yogurt","Juice of 0.5-1 lemon","Diced Roma","1 tblspn honey","tomatoes & cilantro","1 tspn garlic powder","or parsley","1/2 tspn Salt","60g milk (~4 tblspns)"],"source":"Stealth Health","category":"Rice Bowls"},{"name":"WHITE CHEDDAR TRUFFLE MAC","servings":6,"calories":500,"protein":38,"carbs":61,"fat":10,"ingredients":["3 boxes of Mac N Cheese","600g cottage cheese","6g truffle oil (1 tspn)","12oz thin sliced chicken breast","Seasoned with salt, garlic & pepper","1 tsp White Wine Vinegar (or Lemon Juice)"],"source":"Stealth Health","category":"Pasta & Noodles"},{"name":"CAJUN CHICKEN ALFREDO","servings":5,"calories":515,"protein":46,"carbs":45,"fat":18,"ingredients":["15oz chicken breast","280g Protein Penne pasta","2.5 tspn Cajun","seasoning + salt (if","110g 1/3 fat cream cheese","Cajun seasoning has","50g Parmigiano-Reggiano","no sodium)","80g mozzarella","10g olive oil, splash of","2.5 tspn Cajun seasoning","Lemon juice","350ml 1% milk","Salt to taste","2 links Andouille","Chicken sausage (I","2.5 tablespoon chopped","used Good & Gather","parsley","brand)","2.5 tablespoon chopped","chives"],"source":"Stealth Health","category":"Pasta & Noodles"},{"name":"SOUTHWEST CHICKEN & VEGGIE ORZO","servings":6,"calories":510,"protein":41,"carbs":59,"fat":13,"ingredients":["24oz boneless skinless chicken thighs","Seasoned with salt, garlic, onion, smoked","paprika, cumin, dash of cinnamon","336g orzo","3 cans Amy’s southwestern vegetable soup","12oz vegetable or chicken broth","Hot sauce of choice","120g 2% cheddar","240g 2% plain Greek yogurt"],"source":"Stealth Health","category":"Pasta & Noodles"},{"name":"CHEESY BUTTERNUT ORZO","servings":5,"calories":510,"protein":39,"carbs":68,"fat":11,"ingredients":["16oz boneless skinless","500g cubed","chicken thighs","butternut squash","Season with: Salt,","10g olive oil","garlic, onion, pepper,","150g cottage cheese","paprika, chipotle chili","50g parmigiano","powder","reggiano","100ml 1% milk","364g orzo","Salt, garlic, pepper (to","taste)"],"source":"Stealth Health","category":"Pasta & Noodles"},{"name":"SPICY TOMATO CHICKEN PASTA","servings":5,"calories":500,"protein":36,"carbs":56,"fat":16,"ingredients":["28oz diced chicken","336g Pasta","breast","200g Arrabiata (or","any marinara)","180g chopped","80g 1% milk","sundried tomatoes","100g 1/3 fat cream","30g tomato paste","cheese","30g low sodium soy","30g honey","sauce","15g olive oil","Salt, pepper, garlic,","red chili flakes"],"source":"Stealth Health","category":"Pasta & Noodles"},{"name":"BREAKFAST MAC N CHEESE","servings":6,"calories":500,"protein":51,"carbs":37,"fat":20,"ingredients":["336g Protein pasta","9 slices bacon, diced","360g 2% cottage","15oz turkey sausage","cheese","45g 2% cheddar","30g Parmigiano","Reggiano","21g powdered","cheddar","90g milk","1.5 tspn garlic powder","1.5 tspn smoked","paprika","1 tspn rubbed sage"],"source":"Stealth Health","category":"Pasta & Noodles"},{"name":"CHIMICHURRI PASTA W/ BBQ CHICKEN","servings":6,"calories":510,"protein":38,"carbs":53,"fat":17,"ingredients":["32oz boneless","3/4 cup fresh cilantro","skinless chicken","12 cloves garlic","thighs","60g olive oil","30g soy sauce","120g lemon juice (or","15g Worcestershire","red wine vinegar)","90g sugar free bbq","1.5 teaspoon red chili","sauce","flakes","1 tsp each: Garlic","2 ¼ teaspoon dried","powder, chili powder,","oregano","smoked paprika","3 level teaspoon","coarse salt","384g Linguine or","3/4 tspn pepper","pasta of choice","30g honey","1 cup of pasta water"],"source":"Stealth Health","category":"Pasta & Noodles"},{"name":"SPICY SAUSAGE PASTA","servings":5,"calories":505,"protein":40,"carbs":61,"fat":15,"ingredients":["14oz Turkey sausage","1 box Barilla protein","pasta (14.5oz) or pasta","of choice","200g 2% cottage","cheese","200g Arrabiata","50g parmigiano","reggiano","Red chili flakes","Garlic, black pepper","10g honey"],"source":"Stealth Health","category":"Pasta & Noodles"},{"name":"HONEY HABANERO CHICKEN AND RICE","servings":5,"calories":500,"protein":39,"carbs":54,"fat":15,"ingredients":["32oz skinless chicken","280g basmati rice","thighs","2 tablespoons olive oil","60g habenero hot","2 tablespoons lime","sauce","1 tspn salt","60g honey","Cilantro","Drops of lime","40g Mayo","Pinch of salt"],"source":"Stealth Health","category":"Rice Bowls"},{"name":"HONEY BBQ CHICKEN MAC N CHEESE","servings":5,"calories":510,"protein":43,"carbs":59,"fat":12,"ingredients":["325g pasta","18oz skinless chicken","thighs","300g 2% cottage","BBQ dry rub of choice","cheese","120g 2% cheddar","cheese","25g Cheddar powder","60g BBQ sauce","3g Nutritional yeast","Garlic, onion, pepper","& salt to taste"],"source":"Stealth Health","category":"Pasta & Noodles"},{"name":"KOREAN BEEF & CHEESY GOCHUJANG PASTA","servings":5,"calories":515,"protein":38,"carbs":62,"fat":13,"ingredients":["16oz 96% ground beef","375 Protein Penne","2 tspn sesame oil","pasta","20g cup brown sugar","75g 2% cheddar","60g cup soy sauce","50g cream cheese","10g gochujang","10g nutritional yeast","2 green onions, only","1 tablespoons","greens","gochujang","1 tablespoon garlic,","200ml 1% milk","minced","Salt to taste"],"source":"Stealth Health","category":"Pasta & Noodles"},{"name":"CREAMY ROASTED RED PEPPER PASTA","servings":5,"calories":500,"protein":40,"carbs":63,"fat":11,"ingredients":["18oz skinless chicken","100g cottage cheese","thighs","150ml 1% milk","1 tspn onion","120g Roasted red","1.5 tspn garlic","peppers","1.5 tspn salt","80g Parmesan","1.5 tspn paprika","Salt, pepper, garlic","392g pasta"],"source":"Stealth Health","category":"Pasta & Noodles"},{"name":"CREAMY SOUTHWESTERN CHICKEN & RICE","servings":5,"calories":505,"protein":41,"carbs":58,"fat":13,"ingredients":["28oz skinless chicken","280g basmati rice","thighs","2 cans Amy’s","Seasoned with salt,","southwestern","garlic, onion, smoked","vegetable soup (or","paprika, chili powder","veggie soup of choice)","240ml chicken bone","80ml Mexican crema","broth","60g Greek yogurt","1 tablespoon soy sauce","35g 1% milk","Seasonings of choice","5g honey","Pinch of salt","Cilantro","2 tspns diced chipotle","peppers in adobo","1/4 tspn lime juice"],"source":"Stealth Health","category":"Rice Bowls"},{"name":"SPICY TACO BOWLS","servings":5,"calories":515,"protein":44,"carbs":53,"fat":14,"ingredients":["28oz 93% beef","300g Greek yogurt","2 diced onions","75g jalapeño","2 packets taco","10g honey","seasoning","Handful of cilantro","Salt, pepper, garlic","320g basmati rice","onion to taste","15g butter","Pico de Gallo"],"source":"Stealth Health","category":"Burritos & Handheld"},{"name":"CREAMY CHIPOTLE CHICKEN PASTA","servings":8,"calories":495,"protein":44,"carbs":56,"fat":14,"ingredients":["32oz chicken thighs","Chipotle cream sauce","1 tablespoon olive oil","4 chipotle peppers","6 cloves minced garlic","200g Greek yogurt","1 tspn salt","60g light Mayo","2 Tspn cumin","2 limes","2 Tspn smoked","4 tablespoons adobo sauce","paprika","1 tablespoon honey","2 Tspn chili powder","2 tspn smoked paprika","4 tablespoons adobo","2 tspn garlic powder","sauce","~3/4 cup of milk","2 chipotle peppers","Fresh cilantro","2 tablespoons honey","Juice of 2 limes","24oz Banza (or pasta of","1 white onion","choice)"],"source":"Stealth Health","category":"Pasta & Noodles"},{"name":"CREAMY FAJITA CHICKEN ORZO","servings":6,"calories":500,"protein":48,"carbs":58,"fat":11,"ingredients":["32oz thin sliced","4 bell peppers","chicken breast","1 sweet onion","Handful of cilantro","2 tblspn lime juice","1.5 tblspns honey","1 tblspn olive oil","1 tblspn garlic","1 tsp chili powder","1 tsp paprika","220g 0% Greek yogurt","1 tablespoon chipotle","hot sauce","100g mozzarella","380g orzo","1 tsp cumin","2 tsp kosher salt","½ tsp black pepper","1/3 cup water"],"source":"Stealth Health","category":"Pasta & Noodles"}];
+
+// ── STATE ──
+// weeks: { id: string, name: string, meals: number[] }[]
+// activeWeekId: string
+// shopWeekId: string (week shown in shopping list)
+
+let weeks = [];
+let activeWeekId = null;
+let shopWeekId = null;
+
+function getWeek(id) { return weeks.find(w => w.id === id); }
+function getActiveWeek() { return getWeek(activeWeekId); }
+
+// ── WEEK MANAGEMENT ──
+function initWeeks() {
+  try {
+    const saved = localStorage.getItem('mealprep_weeks');
+    if (saved) {
+      weeks = JSON.parse(saved);
+      activeWeekId = localStorage.getItem('mealprep_activeWeek') || (weeks[0] && weeks[0].id);
+      shopWeekId = activeWeekId;
+    }
+  } catch(e) {}
+  if (weeks.length === 0) {
+    addWeek('This Week', false);
+  }
+  renderWeekSelector();
+}
+
+function saveState() {
+  try {
+    localStorage.setItem('mealprep_weeks', JSON.stringify(weeks));
+    localStorage.setItem('mealprep_activeWeek', activeWeekId || '');
+  } catch(e) {}
+}
+
+function addWeek(name, render=true) {
+  const id = 'week_' + Date.now();
+  weeks.push({ id, name, meals: [] });
+  activeWeekId = id;
+  shopWeekId = id;
+  saveState();
+  if (render) { renderWeekSelector(); renderWeekPanel(); renderBrowser(); renderShopView(); }
+  return id;
+}
+
+function deleteWeek() {
+  if (weeks.length === 1) { alert('You need at least one week.'); return; }
+  if (!confirm('Delete "' + (getActiveWeek()?.name || 'this week') + '"?')) return;
+  weeks = weeks.filter(w => w.id !== activeWeekId);
+  activeWeekId = weeks[0].id;
+  shopWeekId = activeWeekId;
+  saveState();
+  renderWeekSelector();
+  renderWeekPanel();
+  renderBrowser();
+  renderShopView();
+}
+
+function setActiveWeek(id) {
+  activeWeekId = id;
+  shopWeekId = id;
+  saveState();
+  renderWeekPanel();
+  renderBrowser();
+  renderShopView();
+}
+
+function promptAddWeek() {
+  const d = new Date();
+  const mon = new Date(d); mon.setDate(d.getDate() - d.getDay() + 1);
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+  const fmt = dt => dt.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+  document.getElementById('week-name-input').value = fmt(mon) + ' – ' + fmt(sun);
+  document.getElementById('week-modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('week-name-input').select(), 50);
+}
+
+function confirmAddWeek() {
+  const name = document.getElementById('week-name-input').value.trim() || 'New Week';
+  closeWeekModal();
+  addWeek(name);
+  switchPanel('plan');
+}
+
+function closeWeekModal(e) {
+  if (!e || e.target === document.getElementById('week-modal-overlay')) {
+    document.getElementById('week-modal-overlay').classList.remove('open');
+  }
+}
+
+// ── MEAL MANAGEMENT ──
+function addMealToWeek(recipeIdx, weekId) {
+  const week = getWeek(weekId);
+  if (!week) return;
+  if (!week.meals.includes(recipeIdx)) week.meals.push(recipeIdx);
+  saveState();
+  renderWeekPanel();
+  renderBrowser();
+  renderShopView();
+}
+
+function removeMealFromWeek(recipeIdx, weekId) {
+  const week = getWeek(weekId);
+  if (!week) return;
+  week.meals = week.meals.filter(i => i !== recipeIdx);
+  saveState();
+  renderWeekPanel();
+  renderBrowser();
+  renderShopView();
+}
+
+function toggleMealInActiveWeek(recipeIdx) {
+  const week = getActiveWeek();
+  if (!week) return;
+  if (week.meals.includes(recipeIdx)) {
+    removeMealFromWeek(recipeIdx, activeWeekId);
+  } else {
+    addMealToWeek(recipeIdx, activeWeekId);
+  }
+}
+
+// ── RENDER WEEK SELECTOR ──
+function renderWeekSelector() {
+  const sel = document.getElementById('active-week-select');
+  sel.innerHTML = weeks.map(w =>
+    `<option value="${w.id}" ${w.id === activeWeekId ? 'selected' : ''}>${w.name}</option>`
+  ).join('');
+}
+
+// ── RENDER WEEK PANEL ──
+function renderWeekPanel() {
+  const week = getActiveWeek();
+  const titleEl = document.getElementById('week-plan-title');
+  const subEl = document.getElementById('week-plan-sub');
+  const listEl = document.getElementById('week-meal-list');
+
+  if (!week) { listEl.innerHTML = ''; return; }
+  titleEl.textContent = week.name;
+
+  if (week.meals.length === 0) {
+    subEl.textContent = 'Click any recipe to add it to this week.';
+    listEl.innerHTML = `<div class="week-empty"><div class="icon">📋</div><p>No meals planned yet.<br>Click a recipe on the left to add it.</p></div>`;
+    return;
+  }
+
+  subEl.textContent = `${week.meals.length} meal${week.meals.length !== 1 ? 's' : ''} planned`;
+  listEl.innerHTML = week.meals.map(idx => {
+    const r = RECIPES[idx];
+    if (!r) return '';
+    return `<div class="week-meal-item">
+      <div class="meal-info">
+        <div class="meal-name" title="${r.name}">${r.name}</div>
+        <div class="meal-meta">${r.calories ? r.calories + ' cal · ' : ''}${r.protein ? r.protein + 'g P · ' : ''}${r.servings ? r.servings + ' srv' : ''}</div>
+      </div>
+      <button class="remove-meal" onclick="removeMealFromWeek(${idx}, '${activeWeekId}')" title="Remove">×</button>
+    </div>`;
+  }).join('');
+}
+
+// ── RENDER SHOPPING VIEW ──
+function renderShopView() {
+  // Render week tabs
+  const tabsEl = document.getElementById('shop-week-tabs');
+  tabsEl.innerHTML = weeks.map(w =>
+    `<button class="shop-week-tab ${w.id === shopWeekId ? 'active' : ''}" onclick="setShopWeek('${w.id}')">${w.name}</button>`
+  ).join('');
+
+  const week = getWeek(shopWeekId);
+  const subEl = document.getElementById('shop-sub');
+  const contentEl = document.getElementById('shop-content');
+
+  if (!week || week.meals.length === 0) {
+    subEl.textContent = 'No meals planned for this week.';
+    contentEl.innerHTML = `<div class="shop-empty"><div class="icon">🛒</div><p>Add meals to "${week ? week.name : 'a week'}" to generate a shopping list.</p></div>`;
+    return;
+  }
+
+  subEl.textContent = `${week.meals.length} meals · ${week.name}`;
+
+  // Collect ingredients
+  const items = [];
+  week.meals.forEach(idx => {
+    const r = RECIPES[idx];
+    if (!r) return;
+    r.ingredients.forEach(ing => items.push({ ing, recipe: r.name }));
+  });
+
+  // Categorize
+  function catIng(ing) {
+    const i = ing.toLowerCase();
+    if (i.match(/chicken|beef|pork|turkey|sausage|meatball|brisket|birria|ground meat|steak|lamb/)) return '🥩 Meat';
+    if (i.match(/pasta|rice|orzo|noodle|banza|mac|macaroni|ramen|spaghetti|penne|fettuccine|grain/)) return '🍝 Grains & Pasta';
+    if (i.match(/cheese|yogurt|milk|cream|cottage|cheddar|mozzarella|parmesan|mayo|sour cream/)) return '🧀 Dairy';
+    if (i.match(/pepper|onion|garlic|tomato|cilantro|lime|lemon|celery|jalape|chile|chili|green onion|bell pepper|avocado|spinach|veggie|vegetable|broccoli|carrot|corn|pea|mushroom|zucchini|squash|potato|sweet potato|scallion|shallot/)) return '🥬 Produce';
+    if (i.match(/soy sauce|miso|adobo|chipotle|sriracha|hot sauce|harissa|gochujang|vinegar|maple|honey|ketchup|mirin|sesame|peanut butter|tahini|enchilada|salsa|teriyaki|worcestershire|oyster sauce|fish sauce|hoisin|buffalo sauce|ranch/)) return '🫙 Sauces & Condiments';
+    if (i.match(/cumin|paprika|salt|black pepper|powder|seasoning|oregano|thyme|rosemary|basil|bay|cinnamon|cayenne|chili powder|garlic powder|onion powder|turmeric|coriander|chili flakes|red pepper flakes/)) return '🌿 Spices';
+    if (i.match(/olive oil|vegetable oil|butter|oil|cooking spray/)) return '🫒 Oils & Fats';
+    if (i.match(/can |canned|fire.roasted|diced tomato|tomato paste|enchilada sauce|broth|stock|coconut milk|green chile|corn starch|flour|bread crumb|panko|bean|chickpea|lentil/)) return '🥫 Canned & Pantry';
+    if (i.match(/egg|bread|tortilla|bun|bagel|pizza|roll|biscuit/)) return '🥚 Eggs & Bread';
+    return '📦 Other';
+  }
+
+  const grouped = {};
+  items.forEach(item => {
+    const cat = catIng(item.ing);
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(item);
+  });
+
+  const order = ['🥩 Meat','🥬 Produce','🧀 Dairy','🍝 Grains & Pasta','🫙 Sauces & Condiments','🥫 Canned & Pantry','🌿 Spices','🫒 Oils & Fats','🥚 Eggs & Bread','📦 Other'];
+  const allCats = [...order.filter(c => grouped[c]), ...Object.keys(grouped).filter(c => !order.includes(c))];
+
+  contentEl.innerHTML = allCats.map(cat => `
+    <div class="shop-section">
+      <div class="shop-section-title">${cat}</div>
+      ${grouped[cat].map(({ing, recipe}) => `
+        <div class="shop-item">
+          <input type="checkbox" class="shop-check" onchange="this.nextElementSibling.style.opacity=this.checked?'0.4':'1'">
+          <div class="item-text">
+            ${ing}
+            <div class="item-recipe">${recipe}</div>
+          </div>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+function setShopWeek(id) {
+  shopWeekId = id;
+  renderShopView();
+}
+
+// ── BROWSER ──
+function renderBrowser() {
+  const query = document.getElementById('search').value.toLowerCase();
+  const catFilter = document.getElementById('cat-filter').value;
+  const srcFilter = document.getElementById('src-filter').value;
+  const activeWeekMeals = getActiveWeek()?.meals || [];
+
+  let filtered = RECIPES.filter((r, i) => {
+    if (query && !r.name.toLowerCase().includes(query)) return false;
+    if (catFilter && r.category !== catFilter) return false;
+    if (srcFilter && r.source !== srcFilter) return false;
+    return true;
+  });
+
+  document.getElementById('results-count').textContent =
+    `${filtered.length} recipe${filtered.length !== 1 ? 's' : ''}`;
+
+  const cats = {};
+  filtered.forEach(r => {
+    if (!cats[r.category]) cats[r.category] = [];
+    cats[r.category].push(r);
+  });
+
+  const catOrder = ['Rice Bowls','Pasta & Noodles','Soups & Stews','Burritos & Handheld','Proteins & Other','Breakfast','Loaded & Sides'];
+  const sortedCats = [...catOrder.filter(c => cats[c]), ...Object.keys(cats).filter(c => !catOrder.includes(c))];
+
+  if (filtered.length === 0) {
+    document.getElementById('recipe-container').innerHTML = '<div class="no-results">No recipes match your search.</div>';
+    return;
+  }
+
+  document.getElementById('recipe-container').innerHTML = sortedCats.map(cat => `
+    <div class="cat-section">
+      <div class="cat-title">${cat} (${cats[cat].length})</div>
+      <div class="recipe-grid">
+        ${cats[cat].map(r => {
+          const idx = RECIPES.indexOf(r);
+          const inWeek = activeWeekMeals.includes(idx);
+          return `<div class="recipe-card ${inWeek ? 'in-week' : ''}"
+            onclick="toggleMealInActiveWeek(${idx})"
+            ondblclick="openModal(${idx}); event.stopPropagation();">
+            <div class="recipe-name">${r.name}</div>
+            <div class="recipe-pills">
+              ${r.calories ? `<span class="pill cal">${r.calories} cal</span>` : ''}
+              ${r.protein ? `<span class="pill pro">${r.protein}g P</span>` : ''}
+              ${r.servings ? `<span class="pill srv">${r.servings} srv</span>` : ''}
+              <span class="pill src">${r.source === 'Macro Cookbook' ? 'MC' : 'SH'}</span>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`).join('');
+}
+
+// ── MODAL ──
+function openModal(idx) {
+  const r = RECIPES[idx];
+  const week = getActiveWeek();
+  const inWeek = week?.meals.includes(idx);
+
+  document.getElementById('modal-inner').innerHTML = `
+    <div class="modal-name">${r.name}</div>
+    <div class="modal-sub">${r.source} · ${r.category}${r.servings ? ' · ' + r.servings + ' servings' : ''}</div>
+    ${(r.calories || r.protein || r.carbs || r.fat) ? `
+    <div class="modal-macros">
+      ${r.calories ? `<div class="modal-macro"><div class="v" style="color:var(--accent2)">${r.calories}</div><div class="l">cal</div></div>` : ''}
+      ${r.protein ? `<div class="modal-macro"><div class="v" style="color:var(--green)">${r.protein}g</div><div class="l">protein</div></div>` : ''}
+      ${r.carbs ? `<div class="modal-macro"><div class="v" style="color:#8aa4cf">${r.carbs}g</div><div class="l">carbs</div></div>` : ''}
+      ${r.fat ? `<div class="modal-macro"><div class="v" style="color:#cf9a6b">${r.fat}g</div><div class="l">fat</div></div>` : ''}
+    </div>` : ''}
+    <div class="modal-section-label">Ingredients (${r.ingredients.length})</div>
+    ${r.ingredients.map(i => `<div class="modal-ing">${i}</div>`).join('')}
+    <div class="modal-footer">
+      <div class="week-add-row">
+        <select class="week-add-select" id="modal-week-select">
+          ${weeks.map(w => `<option value="${w.id}" ${w.id === activeWeekId ? 'selected' : ''}>${w.name}</option>`).join('')}
+        </select>
+        <button class="btn ${inWeek ? 'btn-ghost' : 'btn-green'}" id="modal-add-btn"
+          onclick="modalToggleMeal(${idx})">
+          ${inWeek ? '✓ In plan' : '+ Add to week'}
+        </button>
+      </div>
+      <button class="btn btn-ghost" onclick="closeModal()">Close</button>
+    </div>`;
+
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function modalToggleMeal(idx) {
+  const weekId = document.getElementById('modal-week-select').value;
+  const week = getWeek(weekId);
+  if (!week) return;
+  if (week.meals.includes(idx)) {
+    removeMealFromWeek(idx, weekId);
+    document.getElementById('modal-add-btn').textContent = '+ Add to week';
+    document.getElementById('modal-add-btn').className = 'btn btn-green';
+  } else {
+    addMealToWeek(idx, weekId);
+    document.getElementById('modal-add-btn').textContent = '✓ In plan';
+    document.getElementById('modal-add-btn').className = 'btn btn-ghost';
+  }
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+// ── PANEL SWITCHING ──
+function switchPanel(panel) {
+  document.getElementById('panel-plan').style.display = panel === 'plan' ? 'flex' : 'none';
+  document.getElementById('panel-shop').style.display = panel === 'shop' ? 'flex' : 'none';
+  document.getElementById('tab-plan').classList.toggle('active', panel === 'plan');
+  document.getElementById('tab-shop').classList.toggle('active', panel === 'shop');
+  if (panel === 'shop') renderShopView();
+}
+
+// ── INIT ──
+initWeeks();
+renderBrowser();
+renderWeekPanel();
+</script>
+</body>
+</html>
